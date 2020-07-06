@@ -11,8 +11,8 @@ using namespace std;
 
 #include "constants.h"
 
-
 #include "integrator.hpp"
+#include "io.hpp"
 
 #include "planar_slab.h"
 #include "rho_pot_force.h"
@@ -20,6 +20,16 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+	if (status_t::status_OK == handle_cmd_line(argc, argv))
+	{
+		return 0;
+	}
+	else
+	{
+		return 0;
+	}
+
+
 	cout.precision(15);
 	////////// PARAMETERS ///////////
 	R = 1.57E27; // characteristic scale - radius of star / scale radius for NFW
