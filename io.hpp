@@ -3,16 +3,20 @@
 class Parameters
 {
 public:
+    void print_info() const;
+
     struct {
         int mod; // 0 = star, 1 = NFW
-
     } generic;
+
+    struct {
+        double n;
+    } chi_opt;
 
     struct {
         std::string out_dir;
     } out_opt;
 
-    // double n;
     // double chi_0;
     // double Ys;
     // double R; // scale radius
@@ -31,6 +35,10 @@ public:
 };
 
 extern Parameters param;
+
+#define p_mod param.generic.mod
+#define p_out_dir param.out_opt.out_dir
+
 
 enum class status_t {
     status_OK = 0,

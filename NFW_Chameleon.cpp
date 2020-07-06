@@ -20,14 +20,18 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	if (status_t::status_OK == handle_cmd_line(argc, argv))
+	status_t status = handle_cmd_line(argc, argv);
+	switch (status)
 	{
-		return 0;
+		case status_t::status_OK:
+			param.print_info();
+
+			break;
+
+		default:
+			return int(status);
 	}
-	else
-	{
-		return 0;
-	}
+
 
 
 	cout.precision(15);
