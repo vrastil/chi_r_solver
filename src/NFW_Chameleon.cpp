@@ -9,7 +9,7 @@
 #include <functional>
 using namespace std;
 
-#include "constants.h"
+#include "constants.hpp"
 
 #include "integrator.hpp"
 #include "io.hpp"

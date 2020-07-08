@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "constants.h"
+#include "constants.hpp"
 #include "integrator.hpp"
 
 static void shift(double *y, double *y_0, double *shift, double h, int dim){

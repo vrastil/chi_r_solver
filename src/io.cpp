@@ -45,7 +45,7 @@ status_t handle_cmd_line(int ac, const char* const av[]){
     chi_opt.add_options()
         ("mod", po::value<int>(&param.generic.mod)->default_value(0), "Mode; 0 = star, 1 = NFW")
         ("n", po::value<double>(&param.chi_opt.n)->default_value(0.5), "chameleon power-law potential exponent,0 < n < 1")
-        ("chi_0", po::value<double>(&param.chi_opt.chi_0)->default_value(1E-12), "background value of the chameleon field")
+        ("chi_0", po::value<double>(&param.chi_opt.chi_0)->default_value(1E-10), "background value of the chameleon field")
         ("Ys", po::value<double>(&param.chi_opt.Ys)->default_value(1E-5), "screening potential?")
         ;
     

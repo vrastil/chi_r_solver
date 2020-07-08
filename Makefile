@@ -1,10 +1,36 @@
-SRC := NFW_Chameleon.cpp integrator.cpp constants.cpp io.cpp
-CC := g++
-OPT := -fPIC -std=c++11 -pthread -flto=jobserver
-ARCH := native
-OPTIMIZE := -Ofast -march=${ARCH} -mtune=${ARCH}
-MAIN := main.a
-LIB := -lboost_program_options -lboost_filesystem -lboost_system -lboost_log
+CXX	 		:= g++
+OPT 		:= -fPIC -std=c++11 -pthread -flto=jobserver
+ARCH	 	:= native
+OPTIMIZE	:= -Ofast -march=${ARCH} -mtune=${ARCH}
+CXXFLAGS 	:= $(OPT) $(OPTIMIZE)
+LDFLAGS 	:= -lboost_program_options -lboost_filesystem -lboost_system -lboost_log
 
-all:
-	$(CC) $(SRC) $(OPTIMIZE) $(OPT) $(LIB) -o $(MAIN)
+BUILD   	:= ./build
+OBJ_DIR		:= $(BUILD)/objects
+APP_DIR		:= $(BUILD)
+TARGET 		:= main.a
+INCLUDE	  	:= -Iinclude/
+SRC 		:= src/NFW_Chameleon.cpp src/integrator.cpp src/constants.cpp src/io.cpp
+
+OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
+
+all: build $(APP_DIR)/$(TARGET)
+
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -o $@ $(LDFLAGS)
+
+$(APP_DIR)/$(TARGET): $(OBJECTS)
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/$(TARGET) $^ $(LDFLAGS)
+
+.PHONY: all build clean
+
+build:
+	@mkdir -p $(APP_DIR)
+	@mkdir -p $(OBJ_DIR)
+
+clean:
+	-@rm -rvf $(OBJ_DIR)/*
+	-@rm -rvf $(APP_DIR)/*
+

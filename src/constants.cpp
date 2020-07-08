@@ -1,6 +1,6 @@
 #include <math.h>
 
-# include "constants.h"
+# include "constants.hpp"
 
 const double PI = 4 * atan(1);
 // const double G = 6.67384E-11; // gravitation constatnt
