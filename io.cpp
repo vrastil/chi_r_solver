@@ -35,6 +35,9 @@ status_t handle_cmd_line(int ac, const char* const av[]){
     generic.add_options()
         ("help,h", "produce this help message")			
         ("config,c", po::value<std::string>(&config_file)->default_value("input.cfg"), "configuration file name (optional)")
+        ("c", po::value<double>(&param.generic.c)->default_value(5), "concentration of the halo")
+        ("R", po::value<double>(&param.generic.R)->default_value(25), "characteristic scale - radius of star / scale radius for NFW")
+        ("R200", po::value<double>(&param.generic.R200)->default_value(200), "radius of the halo where rho = 200 * rho_background")
         ;
         
     // options both on command line	and in configuration file
@@ -42,6 +45,8 @@ status_t handle_cmd_line(int ac, const char* const av[]){
     chi_opt.add_options()
         ("mod", po::value<int>(&param.generic.mod)->default_value(0), "Mode; 0 = star, 1 = NFW")
         ("n", po::value<double>(&param.chi_opt.n)->default_value(0.5), "chameleon power-law potential exponent,0 < n < 1")
+        ("chi_0", po::value<double>(&param.chi_opt.chi_0)->default_value(1E-12), "background value of the chameleon field")
+        ("Ys", po::value<double>(&param.chi_opt.Ys)->default_value(1E-5), "screening potential?")
         ;
     
     po::options_description config_output("Output options");

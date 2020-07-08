@@ -36,10 +36,9 @@ int main(int argc, char* argv[])
 
 	cout.precision(15);
 	////////// PARAMETERS ///////////
-	R = 1.57E27; // characteristic scale - radius of star / scale radius for NFW
-//	R = 1.57E17;
 	r_eq =5*R; // valid for r_eq < 0 (linear regime), rho_c decreasing as 1/(1-r_eq/R)
-	mod = 2; // 0...star, 1,...NFW, 2...planar slab
+	
+
 	int reg = 1; // 0...potential, 1...forces
 	int reg_halo = 0; // 0..c,M200=(rho_c, rho_0, r_s), 1..rho_c(c, rho_0) r_s (M200)
 	int reg_rho = 0; // 0..rho_c(R_eq, Ys), 1..R_eq(rho_c, Ys), 2..Ys(R_eq, rho_c)
@@ -50,7 +49,7 @@ int main(int argc, char* argv[])
 	Ms = 4 * PI*rho_c*pow(R, 3);	 
 	n = 1 / 2.0;
 	Ys = 1e-15;
-	// Ys = 4.58335e-13;
+	
 	double M200_sun;  // mass of the halo in solar units / 1e12
 	double M200; // mass of the halo in eV
 	

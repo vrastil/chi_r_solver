@@ -6,11 +6,16 @@ public:
     void print_info() const;
 
     struct {
-        int mod; // 0 = star, 1 = NFW
+        int mod;
+        double c;
+        double R;
+        double R200;
     } generic;
 
     struct {
         double n;
+        double chi_0;
+        double Ys;
     } chi_opt;
 
     struct {
