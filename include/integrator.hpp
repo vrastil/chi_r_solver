@@ -22,7 +22,7 @@ void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_
 double shoot_meth(double s1, double mlt, std::function<bool(double, double*)>t_max, std::function<void(double, double &, double*)>fce_min,
 	t_function fce_max, double err, t_function *f_diff, int dim, double scale);
 
-void if_low_memory(int i, int &i_max, int i_re, double **chi, int dim);
+void if_low_memory(size_t i, size_t* i_max, size_t i_re, double **chi, int dim);
 
 void root_finder(double &x1, double &x2, std::function<double(double)> fce_x, double scale);
 void root_finder(double &x1, double &x2, std::function<double(double)> fce_x, double f_eq, double scale);

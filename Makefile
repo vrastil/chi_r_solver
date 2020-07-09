@@ -10,7 +10,7 @@ OBJ_DIR		:= $(BUILD)/objects
 APP_DIR		:= $(BUILD)
 TARGET 		:= main.a
 INCLUDE	  	:= -Iinclude/
-SRC 		:= src/NFW_Chameleon.cpp src/integrator.cpp src/constants.cpp src/io.cpp
+SRC 		:= src/main.cpp src/integrator.cpp src/io.cpp src/stars_NFW.cpp
 
 OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
