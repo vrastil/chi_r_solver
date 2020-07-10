@@ -109,14 +109,39 @@ status_t handle_cmd_line(int ac, const char* const av[]){
 void Parameters::print_info() const
 {
     BOOST_LOG_TRIVIAL(info) <<
-        "Parameters given through command line options or through configuration file:\n\n"
-        "Generic options:\n"
+        "Parameters given through command line options, through configuration file, or derived:\n"
+        "\nGeneric options:\n"
         "\tmod = " << param.generic.mod << "\n"
+        "\treg_halo = " << param.generic.reg_halo << "\n"
+        "\treg_rho = " << param.generic.reg_rho << "\n"
 
-        "Chameleon parameters options:\n"
+        "\nIntegration options:\n"
+        "\terr = " << param.integration.err << "\n"
+        "\tstep = " << param.integration.step << "\n"
+        "\tr_max = " << param.integration.r_max << "\n"
+        "\th_N = " << param.integration.h_N << "\n"
+        "\th_re = " << param.integration.h_re << "\n"
+
+        "\nSpatial parameters:\n"
+        "\tc = " << param.spatial.c << "\n"
+        "\tR = " << param.spatial.R << "\n"
+        "\tR_eq = " << param.spatial.R_eq << "\n"
+        "\tR200 = " << param.spatial.R200 << "\n"
+        "\trho_c = " << param.spatial.rho_c << "\n"
+        "\trho_0 = " << param.spatial.rho_0 << "\n"
+        "\tMs = " << param.spatial.Ms << "\n"
+        "\tM200 = " << param.spatial.M200 << "\n"
+        "\tM200_sun = " << param.spatial.M200_sun << "\n"
+
+        "\nChameleon parameters:\n"
         "\tn = " << param.chi_opt.n << "\n"
+        "\tbeta = " << param.chi_opt.beta << "\n"
+        "\tYs = " << param.chi_opt.Ys << "\n"
+        "\tchi_0 = " << param.chi_opt.chi_0 << "\n"
+        "\tchi_B = " << param.chi_opt.chi_B << "\n"
+        "\tm_inf = " << param.chi_opt.m_inf << "\n"
 
-        "Output options:\n"
+        "\nOutput options:\n"
         "\tout dir" << param.out_opt.out_dir;
 }
 
