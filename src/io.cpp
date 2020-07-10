@@ -48,7 +48,7 @@ status_t handle_cmd_line(int ac, const char* const av[]){
         ("mod", po::value<mod_t>(&param.generic.mod)->default_value(0), "Mode; 0: star, 1: NFW")
         ("reg_halo", po::value<mod_t>(&param.generic.reg_halo)->default_value(0), "Mode; 0: c, M200=(rho_c, rho_0, R_s), 1: rho_c(c, rho_0), R_s (M200)")
         ("reg_rho", po::value<mod_t>(&param.generic.reg_rho)->default_value(0), "Mode; 0: rho_c(R_eq, Ys); 1: R_eq(rho_c, Ys); 2: Ys(R_eq, rho_c)")
-        ("err", po::value<double>(&param.generic.err)->default_value(1E-8), "absolute / relative tolerances")
+        ("err", po::value<double>(&param.integration.err)->default_value(1E-8), "absolute / relative tolerances")
         ;
 
 
@@ -123,7 +123,7 @@ void Parameters::print_info() const
 
 void Parameters::init()
 {
-    generic.step = spatial.R / 10;
+    integration.step = spatial.R / 10;
     spatial.R_eq = 5*spatial.R;
 
     // HALO REGIME
@@ -189,8 +189,32 @@ void Parameters::init()
     chi_opt.m_inf = sqrt(V_eff_2nd_derr(chi_opt.chi_0));
 
     
-	generic.r_max = 10 / chi_opt.m_inf;
-	generic.h_N = (int)(spatial.R200/generic.step+log(generic.r_max/generic.step));
-	generic.h_re = (int)(log(generic.r_max/generic.step));
+	integration.r_max = 10 / chi_opt.m_inf;
+	integration.h_N = (int)(spatial.R200/integration.step+log(integration.r_max/integration.step));
+	integration.h_re = (int)(log(integration.r_max/integration.step));
+
+    // R200
+    switch (generic.mod){
+	case MOD_STAR:
+    {
+				spatial.R200 = 10 * spatial.R;
+				break;
+	}
+	case MOD_NFW:
+    {
+				spatial.R200 = get_R200();
+				break;
+	}
+	}
+
+	spatial.c = spatial.R200 / spatial.R;
+	spatial.M200 = spatial.Ms*(log(1+spatial.c)-spatial.c/(1+spatial.c));
+	spatial.M200_sun = M_SUN_TO_EV(spatial.M200);
+
+    // ALLOCATION
+    for (auto vec : integration.chi)
+    {
+        vec.reserve(integration.h_N);
+    }
 
 }

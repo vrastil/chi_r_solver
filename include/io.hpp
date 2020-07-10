@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <array>
+#include <vector>
 
 typedef uint8_t mod_t;
 
@@ -23,23 +25,26 @@ public:
     /********************
      * GENERIC
      ********************/
-    struct Generic_t {
+    struct {
         mod_t mod;
         mod_t reg_halo;
         mod_t reg_rho;
+    } generic;
 
+    struct {
         double err;
         double step;
         double r_max;
         size_t h_N;
         size_t h_re;
-    } generic;
+        std::array<std::vector<double>, 3> chi;
+    } integration;
     /********************/
 
     /********************
      * SPATIAL PROPERTIES
      ********************/
-    struct Spatial_t {
+    struct {
         double c;
         double R;
         double R_eq;
@@ -55,7 +60,7 @@ public:
     /********************
      * CHAMELEON
      ********************/
-    struct Chi_opt_t {
+    struct {
         double n;
         double beta;
         double Ys;

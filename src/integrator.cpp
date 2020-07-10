@@ -145,7 +145,7 @@ void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_
 		if ((t - chi[0][i]) >= step){
 			if(t>param.spatial.R) step *= 1.5;
 			i++;
-			if_low_memory(i, &param.generic.h_N, param.generic.h_re, chi,2);
+			if_low_memory(i, &param.integration.h_N, param.integration.h_re, chi,2);
 			chi[0][i] = t;
 			chi[1][i] = y[reg] * mlt;
 		}

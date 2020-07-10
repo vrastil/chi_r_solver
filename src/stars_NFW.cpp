@@ -12,8 +12,8 @@
 using namespace std;
 
 #define mod (param.generic.mod)
-#define h_N param.generic.h_N
-#define h_re (param.generic.h_re)
+#define h_N param.integration.h_N
+#define h_re (param.integration.h_re)
 
 #define R (param.spatial.R)
 #define R200 (param.spatial.R200)
