@@ -29,7 +29,44 @@ using namespace std;
 #define beta (param.chi_opt.beta)
 #define m_inf (param.chi_opt.m_inf)
 
+// SPATIAL FUNCTIONS
+static double pot_star(double r);
+static double force_star(double r);
+static double rho_NFW(double r);
+static double rho_star(double r);
+static double rho_r(double r);
+static double pot_NFW(double r);
+static double force_NFW(double r);
+static double pot_new(double r);
+static double force_new(double r);
+static double r_eq_star();
+static double r_eq_NFW();
 
+// CHAMELEON FUNCTIONS
+static double chi_bulk_der(double r);
+static double chi_bulk_laplace(double r);
+static double chi_bulk_r(double r);
+static double V_eff_der(double r, double chi);
+static double chi_0_der(double r, double *chi);
+static double chi_0_der_lin(double r, double *chi, double a);
+static double chi_1_der(double r, double *chi);
+static double chi_0_der_NFW_lin(double r, double *chi);
+static double chi_1_der_NFW_lin(double r, double *chi);
+
+// SHOOTING METHODS
+static bool is_integrate(double r, double *y, double r_max);
+static void fce_min_r2(double s, double &t_0, double *y_0, double eps, double m);
+static void fce_min_chi_0(double s, double &t_0, double *y_0);
+static double fce_max(double r, double *y);
+static double shoot_meth_star(double err, double eps);
+static double shoot_meth_NFW(double err, double eps);
+static void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err, double **chi, double step, int &N_i, int reg);
+static double get_chi_0_star(double err, double eps);
+static double get_chi_0_NFW(double err, double eps);
+static void slv_Chameleon_star(double r_max, double err, double **chi, double &step, int &N_i, int reg);
+static void slv_Chameleon_star(double r_max, double err, double **chi, double &step, int &N_i, int reg, int *cout_max);
+static void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int &N_i, int reg);
+static void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int &N_i, int reg, int *cout_max);
 
 double chi_bulk(double rho){
 	return chi_0*pow(rho_0 / rho, 1 / (1 - n_chi));

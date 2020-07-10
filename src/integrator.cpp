@@ -6,6 +6,18 @@
 #include "io.hpp"
 #include "integrator.hpp"
 
+static void Runge_Kutta_adap_step(double &t_0, double *y_0, double &h_in, double h_min, double h_max, double atol,
+                           double rtol, t_function *f, int dim, int &N_iter);
+static void Runge_Kutta_adap_step(double &t_0, double *y_0, double &h_in, double h_min, double h_max, double err, t_function *f, int dim);
+static void Runge_Kutta_adap_step(double &t_0, double *y_0, double &h_in, double h_min, double h_max, double err, t_function *f, int dim, int &N_iter);
+
+
+static void integrate(double s, double &t, double *y, std::function<bool(double, double*)>t_max, std::function<void(double, double &, double*)>fce_min,
+               double err, t_function *f_diff, int dim);
+static void root_finder(double &x1, double &x2, std::function<double(double)> fce_x, double scale);
+static void root_finder(double &x1, double &x2, std::function<double(double)> fce_x, double f_eq, double x_rtol, double x_atol, double f_atol);
+static void get_x1_x2(double &x1, double &x2, std::function<double(double)> fce, double mlt);
+
 static void shift(double *y, double *y_0, double *shift, double h, int dim){
 	for (int i = 0; i < dim; i++){
 		y[i] = y_0[i] + h*shift[i];
