@@ -1,5 +1,5 @@
 CXX	 		:= g++
-OPT 		:= -fPIC -std=c++11 -pthread -flto=jobserver
+OPT 		:= -fPIC -std=c++11 -pthread -flto=jobserver -MMD -MP
 ARCH	 	:= native
 OPTIMIZE	:= -Ofast -march=${ARCH} -mtune=${ARCH}
 CXXFLAGS 	:= $(OPT) $(OPTIMIZE)
@@ -13,6 +13,7 @@ INCLUDE	  	:= -Iinclude/
 SRC 		:= src/main.cpp src/integrator.cpp src/io.cpp src/stars_NFW.cpp
 
 OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
+DEPS 	 := $(OBJECTS:.o=.d)
 
 all: build $(APP_DIR)/$(TARGET)
 
@@ -34,3 +35,4 @@ clean:
 	-@rm -rvf $(OBJ_DIR)/*
 	-@rm -rvf $(APP_DIR)/*
 
+-include $(DEPS)
