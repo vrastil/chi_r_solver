@@ -11,13 +11,6 @@ typedef std::size_t mod_t;
 #define MOD_STAR 0
 #define MOD_NFW  1
 
-#define MOD_M200_DERIVED 0
-#define MOD_RHOC_DERIVED 1
-
-#define MOD_CHI_RHOC_DERIVED 0
-#define MOD_CHI_REQ_DERIVED  1
-#define MOD_CHI_YS_DERIVED   2
-
 class Parameters
 {
 public:
@@ -50,7 +43,7 @@ public:
         double R200;
         double rho_c;
         double rho_0;
-        double M200; // mass of the halo in [kpc]
+        double M200; // mass of the halo in eV
         double Ms; // 4 PI rho R3 in [kpc]
         double M200_sun; // mass of the halo in solar units / 1e12
     } spatial;

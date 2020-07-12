@@ -95,18 +95,18 @@ void solve()
 	int N_i;
 
 	switch (mod){
-	case 0:
-	{
-		BOOST_LOG_TRIVIAL(info) << "Start solving the chameleon field for STAR.";
-		// slv_Chameleon_star(r_max, err, chi, step, N_i, &N_i);
-		break;
-	}
-	case 1:
-	{
-		BOOST_LOG_TRIVIAL(info) << "Start solving the chameleon field for NFW.";
-		// slv_Chameleon_NFW(r_max, err, chi, step, N_i, &N_i);s
-		break;
-	}
+		case MOD_STAR:
+		{
+			BOOST_LOG_TRIVIAL(info) << "Start solving the chameleon field for STAR.";
+			// slv_Chameleon_star(r_max, err, chi, step, N_i, &N_i);
+			break;
+		}
+		case MOD_NFW:
+		{
+			BOOST_LOG_TRIVIAL(info) << "Start solving the chameleon field for NFW.";
+			// slv_Chameleon_NFW(r_max, err, chi, step, N_i, &N_i);s
+			break;
+		}
 	}
 }
 
@@ -811,22 +811,15 @@ double rho_r(double r){
 }
 
 double pot_NFW(double r){
-//	double phi_0 = Ms / R / (c + 1);
-//	if (r == 0) return -Ms / R *(1 - 1 / (c + 1));
 	if (r == 0) return -Ms / R;
 	double x = r / R;
 	return -Ms / R*log(1 + x) / x;
-//	if (x < c) return -Ms / R*(log(1 + x) / x - 1 / (1 + c));
-	// else return -Ms / (R*x)*(log(1 + c) - c / (c + 1));
 }
 
 double force_NFW(double r){
 	double x = r / R;
-//	if (x == 0) return -Ms / (2 * R*R);
 	if (x < 1e-10) return -Ms / (R*R)*(1 / 2.0 - 2 * x / 3 + 3 * x*x / 4); // Taylor expansion to prevent great numerical errors
 	return Ms / (R*R) * (x - (1 + x)*log(1 + x)) / (x*x*(1 + x));
-//	if (x<c) return Ms / (R*R) * (x - (1 + x)*log(1 + x)) / (x*x*(1 + x));
-//	else return -Ms / (R*R)*(log(1 + c) - c / (c + 1)) / (x*x);
 }
 
 double pot_new(double r){
@@ -844,31 +837,39 @@ double force_new(double r){
 }
 
 double r_eq_star(){
+	// linear case
 	if (pot_star(0) + Ys > 0){
 		double r = Ys / abs(pot_star(0)) - 1;
 		return -r * R;
 	}
+	// non-linear case, inside the star
 	else if (pot_star(R) + Ys > 0){
 		return sqrt(3*(R*R - Ys / (2 * M_PI*rho_c)));
 	}
-	else{
+	// non-linear case, outside the star
+	else
+	{
 		return 4 * M_PI*rho_c / 3 * pow(R, 3) / Ys;
 	}
 
 }
 
 double r_eq_NFW(){
+	// linear case
 	if (pot_NFW(0) + Ys > 0){
 		double r = Ys / abs(pot_NFW(0)) - 1;
 		return r / R;
 	}
-	double r1 = R * 2 * (1 - R*Ys / (Ms));
-	double r2;
+	else
+	{
+		double r1 = R * 2 * (1 - R*Ys / (Ms));
+		double r2;
 
-	get_x1_x2(r1, r2, pot_NFW, -Ys, 1.5);
-	root_finder(r1, r2, pot_NFW, -Ys, Ys);
+		get_x1_x2(r1, r2, pot_NFW, -Ys, 1.5);
+		root_finder(r1, r2, pot_NFW, -Ys, Ys);
 
-	return r2;
+		return r2;
+	}
 }
 
 double get_r_eq(){
