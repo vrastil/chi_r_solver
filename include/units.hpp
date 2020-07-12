@@ -1,29 +1,46 @@
 #pragma once
 
+/* convertes star radius in units of the sun
+   to computing units [m] */
+double star_radius_to_cu(double star_rad);
+
 /* convertes halo mass in units of the sun * 1E12
-   to computing units [kpc] */
+   to computing units */
 double halo_mass_to_cu(double mass_halo);
 
 /* convertes star mass in units of the sun
-   to computing units [R_sun] */
+   to computing units */
 double star_mass_to_cu(double mass_halo);
 
 /* converts density in units of the critical density
-   to computing units [kpc]
+   to computing units
 */
 double density_to_halo_cu(double omega_m);
 
 /* converts density in units of the critical density
-   to computing units [R_sub]
+   to computing units
 */
 double density_to_sun_cu(double omega_m);
 
-/* converts chameleon field in units planck mass,
-   i.e. computing units, to physical units [R_sub]
+/* converts chameleon field in units of chi_0,
+   i.e. computing units, to physical units
 */
 double chi_cu_to_phys(double chi_cu);
 
 /*
 */
-double get_v_eff_der_prefactor();
-double get_v_eff_2nd_der_prefactor();
+double get_force_mlt();
+double get_pot_mlt();
+
+double get_mass_scale();
+double get_radius_scale();
+
+// prefactor for gravitational potential
+// G*rho_m,0 + computing units
+void get_phi_prefactor();
+extern double phi_prefactor;
+
+// dimensionless prefactor to poisson equation for chameleon field
+// beta*rho_m,0 / (Mpl*chi_0) + computing units
+void get_chi_prefactor();
+extern double chi_prefactor;

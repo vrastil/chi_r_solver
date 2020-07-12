@@ -20,6 +20,7 @@ using namespace std;
 
 #define R param.spatial.R
 #define R200 param.spatial.R200
+#define Omega_m param.spatial.Omega_m
 #define rho_0 param.spatial.rho_0
 #define rho_c param.spatial.rho_c
 #define Ms param.spatial.Ms
@@ -85,9 +86,6 @@ static void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double
 static void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step);
 static void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step);
 
-static double V_EFF_DER_PREFACTOR;
-static double V_EFF_2ND_DER_PREFACTOR;
-
 void solve()
 {
 	// extract / define variables
@@ -119,13 +117,16 @@ void spatial_init()
         // STAR: from radius and mass of the star compute its density
         case MOD_STAR:
         {
-            // convert mass to computing units, for star Ms = M200
+			// convert radius input to computing units
+			R = star_radius_to_cu(R);
+
+            // convert mass input to computing units, for star Ms = M200
             Ms = M200 = star_mass_to_cu(M200_sun);
 
             // convert density to computing units
-            rho_0 = density_to_sun_cu(rho_0);
+            rho_0 = density_to_sun_cu(Omega_m);
 
-            // from mass and radius (in star units) get density
+            // from mass and radius get density
             rho_c = (3*Ms)/(4*M_PI*pow(R, 3));
 
             // for star parameter R200 only for maximal integration
@@ -139,7 +140,7 @@ void spatial_init()
             M200 = halo_mass_to_cu(M200_sun);
 
             // convert density to computing units
-            rho_0 = density_to_halo_cu(rho_0);
+            rho_0 = density_to_halo_cu(Omega_m);
             
             // rho_0 parameter of the NFW halo
             rho_c = 200 * rho_0*c*(1 + c)*(1 + c);
@@ -159,6 +160,9 @@ void spatial_init()
 
 void chi_init()
 {
+	// first initialize phi_prefactor -- needed for potentials
+	get_phi_prefactor();
+
     if (Ys)
     {
         // from the screening potential get R_eq
@@ -170,11 +174,16 @@ void chi_init()
         Ys = get_Ys();
     }
 
-	V_EFF_DER_PREFACTOR = get_v_eff_der_prefactor();
-	V_EFF_2ND_DER_PREFACTOR = get_v_eff_2nd_der_prefactor();
+	// initialize chi_prefactor -- needd for mass
+	get_chi_prefactor();
 
 	chi_B = chi_bulk(rho_c + rho_0);
     m_inf = chi_mass(1);
+
+	// debug
+    BOOST_LOG_TRIVIAL(debug) << "Pot(0) = " << pot_new(0);
+    BOOST_LOG_TRIVIAL(debug) << "Pot(R) = " << pot_new(R);
+    BOOST_LOG_TRIVIAL(debug) << "Pot(R_eq) = " << pot_new(R_eq);
 }
 
 double chi_bulk(double rho){
@@ -209,7 +218,7 @@ double chi_bulk_r(double r){
 double V_eff_der(double r, double chi){
 	if (chi <= 0) chi = chi_bulk_r(r);
 
-	double v = V_EFF_DER_PREFACTOR*(rho_r(r) - rho_0*pow(chi, n_chi - 1));
+	double v = chi_prefactor*(rho_r(r) - rho_0*pow(chi, n_chi - 1));
 
 	if ((v != v) || (isinf(v))){
 		return 0;
@@ -218,8 +227,8 @@ double V_eff_der(double r, double chi){
 }
 
 double V_eff_2nd_derr(double chi){
-	// right computing units -- 1/kpc2 or 1/R_sun2
-	return V_EFF_2ND_DER_PREFACTOR*pow(chi, n_chi - 2);
+	// right computing units
+	return chi_prefactor*rho_0*(1-n_chi)*pow(chi, n_chi - 2);
 }
 
 double chi_mass(double chi)
@@ -584,24 +593,26 @@ void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step)
 	// potential
 	std::string file_name = param.out_opt.out_dir + "potential.dat";
 	Ofstream File(file_name);
+	double mlt = get_pot_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing potential into file " << file_name;
 	File << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
     File << std::scientific;
 	for (size_t j = 0; j < size; j++){
-		File << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
+		File << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << (1 - chi[1][j])*mlt << endl;
 	}
 	File.close();
 
 	// forces
 	file_name = param.out_opt.out_dir + "forces.dat";
 	File.open(file_name);
+	mlt = get_force_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
 	File << "# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
     File << std::scientific;
 	for (size_t j = 1; j < size; j++){
-		File << chi[0][j] / R << "	" << chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
+		File << chi[0][j] / R << "	" << mlt*chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
 	}
 }
 
@@ -689,12 +700,13 @@ void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	// forces
 	file_name = param.out_opt.out_dir + "forces.dat";
 	File.open(file_name);
+	double mlt = get_force_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
 	File << "# r/r_s	-F_N	-F_\phi" << endl;
     File << std::scientific;
 	for (size_t j = 1; j < size; j++){
-		File << << chi[0][j] / R << "	" << chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
+		File << chi[0][j] / R << "	" << mlt*chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
 	}
 }
 
@@ -707,13 +719,13 @@ double get_R200(){
 }
 
 double pot_star(double r){
-	if (r<R) return -2 * M_PI*rho_c*(R*R - r*r / 3.0);
-	else return -4 * M_PI*rho_c*R*R*R / (3 * r);
+	if (r<R) return -2 * M_PI*rho_c*phi_prefactor*(R*R - r*r / 3.0);
+	else return -4 * M_PI*rho_c*phi_prefactor*R*R*R / (3 * r);
 }
 
 double force_star(double r){
-	if (r < R) return -4 * M_PI*rho_c*r / 3.0;
-	else return -4 * M_PI*rho_c*R*R*R / (3 * r*r);
+	if (r < R) return -4 * M_PI*rho_c*phi_prefactor*r / 3.0;
+	else return -4 * M_PI*rho_c*phi_prefactor*R*R*R / (3 * r*r);
 }
 
 double rho_NFW(double r){
@@ -734,15 +746,15 @@ double rho_r(double r){
 }
 
 double pot_NFW(double r){
-	if (r == 0) return -Ms / R;
+	if (r == 0) return -Ms * phi_prefactor / R;
 	double x = r / R;
-	return -Ms / R*log(1 + x) / x;
+	return -Ms * phi_prefactor / R*log(1 + x) / x;
 }
 
 double force_NFW(double r){
 	double x = r / R;
-	if (x < 1e-10) return -Ms / (R*R)*(1 / 2.0 - 2 * x / 3 + 3 * x*x / 4); // Taylor expansion to prevent great numerical errors
-	return Ms / (R*R) * (x - (1 + x)*log(1 + x)) / (x*x*(1 + x));
+	if (x < 1e-10) return -Ms * phi_prefactor / (R*R)*(1 / 2.0 - 2 * x / 3 + 3 * x*x / 4); // Taylor expansion to prevent great numerical errors
+	return Ms * phi_prefactor / (R*R) * (x - (1 + x)*log(1 + x)) / (x*x*(1 + x));
 }
 
 double pot_new(double r){
@@ -767,12 +779,12 @@ double r_eq_star(){
 	}
 	// non-linear case, inside the star
 	else if (pot_star(R) + Ys > 0){
-		return sqrt(3*(R*R - Ys / (2 * M_PI*rho_c)));
+		return sqrt(3*(R*R - Ys / (2 * M_PI*phi_prefactor*rho_c)));
 	}
 	// non-linear case, outside the star
 	else
 	{
-		return 4 * M_PI*rho_c / 3 * pow(R, 3) / Ys;
+		return 4 * M_PI*rho_c*phi_prefactor / 3 * pow(R, 3) / Ys;
 	}
 
 }
@@ -785,7 +797,7 @@ double r_eq_NFW(){
 	}
 	else
 	{
-		double r1 = R * 2 * (1 - R*Ys / (Ms));
+		double r1 = R * 2 * (1 - R*Ys / (Ms * phi_prefactor));
 		double r2;
 
 		get_x1_x2(r1, r2, pot_NFW, -Ys, 1.5);

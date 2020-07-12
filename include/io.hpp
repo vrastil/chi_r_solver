@@ -65,6 +65,7 @@ public:
         double R;
         double R_eq;
         double R200;
+        double Omega_m;
         double rho_c;
         double rho_0;
         double M200; // mass of the halo in eV

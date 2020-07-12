@@ -18,11 +18,12 @@
 #include <fstream>
 
 #include "io.hpp"
+#include "units.hpp"
 #include "stars_NFW.hpp"
 
 namespace po = boost::program_options;
 
-constexpr size_t MAX_MEMORY_SIZE = 1024UL * 1024UL * 1024UL * 2UL; // 2 GB
+constexpr size_t MAX_MEMORY_SIZE = 1024UL * 1024UL * 200UL; // 200 MB
 
 /****************************//**
  * PUBLIC FUNCTIONS DEFINITIONS *
@@ -49,7 +50,7 @@ status_t handle_cmd_line(int ac, const char* const av[]){
         ("c", po::value<double>(&param.spatial.c)->default_value(5), "concentration of the halo")
         ("R", po::value<double>(&param.spatial.R)->default_value(25), "characteristic scale - radius of star in solar units / scale radius in kpc for NFW")
         ("M200_sun", po::value<double>(&param.spatial.M200_sun)->default_value(10), "mass of the star/halo in solar units, for halo with additional factor of 1E12")
-        ("rho_0", po::value<double>(&param.spatial.rho_0)->default_value(4E-11), "background density")
+        ("Omega_m", po::value<double>(&param.spatial.Omega_m)->default_value(4E4), "background density")
         ;
         
     // CHAMELEON
@@ -102,30 +103,30 @@ void Parameters::print_info() const
     BOOST_LOG_TRIVIAL(info) <<
         "Parameters given through command line options, through configuration file, or derived:\n"
         "\nGeneric options:\n"
-        "\tmod = " << param.integration.mod << "\n"
+        "\tmod = " << param.integration.mod <<
 
         "\nIntegration options:\n"
-        "\terr = " << param.integration.err << "\n"
-        "\tstep = " << param.integration.step << "\n"
-        "\tr_max = " << param.integration.r_max << "\n"
+        "\terr = " << param.integration.err <<
+        "\tstep = " << param.integration.step <<
+        "\tr_max = " << param.integration.r_max <<
 
         "\nSpatial parameters:\n"
-        "\tc = " << param.spatial.c << "\n"
-        "\tR = " << param.spatial.R << "\n"
-        "\tR200 = " << param.spatial.R200 << "\n"
-        "\trho_c = " << param.spatial.rho_c << "\n"
-        "\trho_0 = " << param.spatial.rho_0 << "\n"
-        "\tM200 = " << param.spatial.M200 << "\n"
-        "\tMs = " << param.spatial.Ms << "\n"
-        "\tM200_sun = " << param.spatial.M200_sun << "\n"
+        "\tc = " << param.spatial.c <<
+        "\tR / R_s = " << param.spatial.R / get_radius_scale() <<
+        "\tR200 / R_s = " << param.spatial.R200 / get_radius_scale() <<
+        "\trho_c = " << param.spatial.rho_c <<
+        "\trho_0 = " << param.spatial.rho_0 <<
+        "\tM200 / M_s = " << param.spatial.M200 / get_mass_scale() <<
+        "\tMs / M_s = " << param.spatial.Ms / get_mass_scale() <<
+        "\tM200_sun = " << param.spatial.M200_sun <<
 
         "\nChameleon parameters:\n"
-        "\tn = " << param.chi_opt.n << "\n"
-        "\tbeta = " << param.chi_opt.beta << "\n"
-        "\tYs = " << param.chi_opt.Ys << "\n"
-        "\tR_eq = " << param.spatial.R_eq << "\n"
-        "\tchi_B = " << param.chi_opt.chi_B << "\n"
-        "\tm_inf = " << param.chi_opt.m_inf << "\n"
+        "\tn = " << param.chi_opt.n <<
+        "\tbeta = " << param.chi_opt.beta <<
+        "\tYs = " << param.chi_opt.Ys <<
+        "\tR_eq = " << param.spatial.R_eq <<
+        "\tchi_B = " << param.chi_opt.chi_B <<
+        "\tm_inf = " << param.chi_opt.m_inf <<
 
         "\nOutput options:\n"
         "\tout dir" << param.out_opt.out_dir;
@@ -146,6 +147,7 @@ void Parameters::init()
 
     // ALLOCATION
     size_t capacity = std::min((size_t)(spatial.R200/integration.step+log(integration.r_max/integration.step)), MAX_MEMORY_SIZE);
+    BOOST_LOG_TRIVIAL(info) << "Capacity: " << capacity;
     integration.chi.reserve(capacity);
 
     // DIRECTORY STRUCT
@@ -195,17 +197,24 @@ std::string currentDateTime()
 std::string std_out_dir()
 {
     /// directory name = YYMMDD_HHMMSS_m_p_M_b
-    // const std::string out_dir = param.out_opt.out_dir + currentDateTime() + "_" + std::to_string(param.integration.mod) +"m_" +
+    std::string out_dir = param.out_opt.out_dir;
+    switch (param.integration.mod)
+    {
+        case MOD_STAR: out_dir += "STAR/"; break;
+        case MOD_NFW: out_dir += "NFW/"; break;
+    }
+    // out_dir += currentDateTime();
+
+    // const std::string out_dir = param.out_opt.out_dir + std::to_string(param.integration.mod) +"m_" +
     //                   std::to_string(param.spatial.R) + "R_" + std::to_string(param.spatial.c) +"c_" + 
     //                   std::to_string(param.chi_opt.Ys) + "Y";
 
-    const std::string out_dir = param.out_opt.out_dir + std::to_string(param.integration.mod) +"m_" +
-                      std::to_string(param.spatial.R) + "R_" + std::to_string(param.spatial.c) +"c_" + 
-                      std::to_string(param.chi_opt.Ys) + "Y";
+    // TODO: for now do not check existing directories, overwrite
+    return out_dir + "/";
 
     /// check if directory exists
     if (!fs::exists(fs::path(out_dir.c_str()))) return out_dir + "/";
-    
+
     /// try appending numbers starting at 2
     else
     {
