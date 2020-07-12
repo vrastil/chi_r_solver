@@ -579,20 +579,30 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step){
 	slv_Chameleon_star(r_max, err, chi, step);
 	
-	// const size_t size = chi.size();
+	const size_t size = chi.size();
 
-	// // potential
-	// cout << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
-	// for (size_t j = 0; j < size; j++){
-	// 	cout << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
-	// }
+	// potential
+	std::string file_name = param.out_opt.out_dir + "potential.dat";
+	Ofstream File(file_name);
+	
+	BOOST_LOG_TRIVIAL(debug) << "Writing potential into file " << file_name;
+	File << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
+    File << std::scientific;
+	for (size_t j = 0; j < size; j++){
+		File << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
+	}
+	File.close();
 
-
-	// // forces
-	// cout << "\n\n# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
-	// for (size_t j = 1; j < size; j++){
-	// 	cout << chi[0][j] / R << "	" << chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
-	// }
+	// forces
+	file_name = param.out_opt.out_dir + "forces.dat";
+	File.open(file_name);
+	
+	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
+	File << "# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
+    File << std::scientific;
+	for (size_t j = 1; j < size; j++){
+		File << chi[0][j] / R << "	" << chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
+	}
 }
 
 void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
@@ -663,19 +673,29 @@ void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
 
 void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	slv_Chameleon_NFW(r_max, err, chi, step);
-	// const size_t size = chi.size();
-	// // potential
-	// cout << "# r/r_s	-\Phi_N(r)	\delta\phi(r)/(2\beta\Mpl)" << endl;
-	// for (size_t j = 0; j< size; j++){
-	// 	cout << chi[0][j] / R << "	" << -pot_NFW(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
-	// }
+	const size_t size = chi.size();
+	// potential
+	std::string file_name = param.out_opt.out_dir + "potential.dat";
+	Ofstream File(file_name);
+	
+	BOOST_LOG_TRIVIAL(debug) << "Writing potential into file " << file_name;
+	File << "# r/r_s	-\Phi_N(r)	\delta\phi(r)/(2\beta\Mpl)" << endl;
+    File << std::scientific;
+	for (size_t j = 0; j < size; j++){
+		File << chi[0][j] / R << "	" << -pot_NFW(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
+	}
+	File.close();
 
-	// // forces
-	// double r, Mr;
-	// cout << "# r/r_s	-F_N	-F_\phi" << endl;
-	// for (size_t j = 0; j < size; j++){
-	// 	cout << chi[0][j] / R << "	" << chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
-	// }
+	// forces
+	file_name = param.out_opt.out_dir + "forces.dat";
+	File.open(file_name);
+	
+	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
+	File << "# r/r_s	-F_N	-F_\phi" << endl;
+    File << std::scientific;
+	for (size_t j = 1; j < size; j++){
+		File << << chi[0][j] / R << "	" << chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
+	}
 }
 
 double get_R200(){

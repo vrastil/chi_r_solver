@@ -5,6 +5,7 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <fstream>
 
 typedef std::size_t mod_t;
 
@@ -101,3 +102,34 @@ enum class status_t {
 };
 
 status_t handle_cmd_line(int ac, const char* const av[]);
+
+
+/**
+ * class  Ofstream handles opening and closing files, has 16MB buffer for output 
+ */
+
+class Ofstream : public std::ofstream
+{
+public:
+    Ofstream(std::string file_name);
+    char* buf;
+    ~Ofstream();
+};
+
+/**
+ * class  Ifstream handles opening and closing files
+ */
+
+class Ifstream : public std::ifstream
+{
+public:
+    Ifstream(std::string file_name);
+    ~Ifstream();
+};
+
+std::string currentDateTime();
+std::string std_out_dir();
+
+void create_dir(const std::string& out_dir);
+void remove_dir(const std::string &out_dir);
+void remove_all_files(const std::string &out_dir);

@@ -147,4 +147,106 @@ void Parameters::init()
     // ALLOCATION
     size_t capacity = std::min((size_t)(spatial.R200/integration.step+log(integration.r_max/integration.step)), MAX_MEMORY_SIZE);
     integration.chi.reserve(capacity);
+
+    // DIRECTORY STRUCT
+    out_opt.out_dir = std_out_dir();
+    create_dir(out_opt.out_dir);
+}
+
+namespace fs = boost::filesystem;
+
+#define BUFF_SIZE 1024 * 1024 * 16 // 16 MB buffer
+
+Ofstream::Ofstream(std::string file_name) : std::ofstream(file_name), buf(new char[BUFF_SIZE])
+{
+    if (!this->is_open()) throw std::runtime_error("Error while opening '" + file_name + "'");
+    this->rdbuf()->pubsetbuf(buf, sizeof(buf));
+}
+
+Ofstream::~Ofstream()
+{
+    delete[] buf;
+    if (this->is_open()) this->close();
+}
+
+Ifstream::Ifstream(std::string file_name) : std::ifstream(file_name)
+{
+    if (!this->is_open()) throw std::runtime_error("Error while opening '" + file_name + "'");
+}
+
+Ifstream::~Ifstream()
+{
+    if (this->is_open()) this->close();
+}
+
+// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+std::string currentDateTime()
+{
+	const time_t     now = time(0);
+	struct tm  tstruct;
+	char       buf[80];
+	gmtime_r(&now, &tstruct);
+	strftime(buf, sizeof(buf), "%y%m%d_%H%M%S", &tstruct);
+	
+	std::string returnval(buf);
+    return returnval;
+}
+
+std::string std_out_dir()
+{
+    /// directory name = YYMMDD_HHMMSS_m_p_M_b
+    // const std::string out_dir = param.out_opt.out_dir + currentDateTime() + "_" + std::to_string(param.integration.mod) +"m_" +
+    //                   std::to_string(param.spatial.R) + "R_" + std::to_string(param.spatial.c) +"c_" + 
+    //                   std::to_string(param.chi_opt.Ys) + "Y";
+
+    const std::string out_dir = param.out_opt.out_dir + std::to_string(param.integration.mod) +"m_" +
+                      std::to_string(param.spatial.R) + "R_" + std::to_string(param.spatial.c) +"c_" + 
+                      std::to_string(param.chi_opt.Ys) + "Y";
+
+    /// check if directory exists
+    if (!fs::exists(fs::path(out_dir.c_str()))) return out_dir + "/";
+    
+    /// try appending numbers starting at 2
+    else
+    {
+        for(size_t i = 2; ; ++i)
+        {
+            const std::string out_dir_new = out_dir  + "_" + std::to_string(i);
+            if (!fs::exists(fs::path(out_dir_new.c_str()))) return out_dir_new + "/";
+        }
+    }
+}
+
+void create_dir(const std::string &out_dir)
+{
+	const fs::path dir(out_dir.c_str());
+	if(fs::create_directories(dir))
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Directory created: "<< out_dir;
+    }
+}
+
+void remove_dir(const std::string &out_dir)
+{
+    const fs::path dir(out_dir.c_str());
+    if (fs::remove_all(dir))
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Directory removed: "<< out_dir;
+    }
+}
+
+void remove_all_files(const std::string &out_dir)
+{
+    const fs::path dir(out_dir.c_str());
+    size_t i = 0;
+
+    for(auto & p : fs::directory_iterator(dir))
+    {
+        if (fs::is_regular_file(p))
+        {
+            fs::remove(p);
+            ++i;
+        }
+    }
+    BOOST_LOG_TRIVIAL(debug) << "Removed " << i << " file(s) in directory: "<< out_dir;
 }
