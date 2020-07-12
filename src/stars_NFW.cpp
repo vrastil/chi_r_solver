@@ -263,7 +263,7 @@ double chi_1_der_NFW_lin(double r, double *chi){
 bool is_integrate(double r, double *y, double r_max){
 	if ((r_max != 0) && (r > r_max)) return false;
 	if (r < R200) return true;
-	return abs(1 - y[0]) > 1e-2;
+	return abs(1 - y[0]) > 1e-3;
 }
 
 void fce_min_r2(double s, double &t_0, double *y_0, double eps, double m){
@@ -309,96 +309,26 @@ double fce_max(double r, double *y){
 double shoot_meth_star(double err, double eps){
 	double m = chi_mass(chi_B);
 	double h = 1;
-	double r2a = R - get_star_2a_prefactor()*(1 - chi_B) / (rho_c*R*R)*R; // analytival value of r2
 	double s1;
-	if (R_eq<r2a) s1 = R_eq;
-	else s1 = r2a;
-	if (s1 > R) return R;
-	//	s1 = R;
+
+	if (R_eq > 10*R)
+	{
+		return R;
+	}
+	else if (R_eq < R)
+	{
+		s1 = R_eq;
+	}
+	else
+	{
+		s1 = R;
+	}
+
 	auto fce_min_star = bind(fce_min_r2, placeholders::_1, placeholders::_2, placeholders::_3, eps, m);
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 	t_function f_diff[] = { chi_0_der, chi_1_der };
 
 	return shoot_meth(s1, 0.7, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
-
-	/*
-	double M = 4 * M_PI / 3 * rho_c*pow(R, 3);
-	double a;
-
-
-	while (r < 1 / m_inf){
-	Runge_Kutta_adap_step(r, y, h, err, f, 2);
-	if (y[0] <= 0){
-	break;
-	}
-	}
-
-
-
-	//		f1 = y[0] - y_max;
-	f1 = (m_inf*r + 1) / r*(y[0] - 1) + y[1];
-	f2 = f1;
-	do{ // second guess of opposite sign
-	guess1 = guess2;
-	f1 = f2;
-	guess2 /= 2;
-	if (guess2 < 1e-10){
-	guess2 = 0;
-	r = guess2;
-	y[0] = chi_B*(1 + eps);
-	//y[1] = chameleon_der(r, m, eps);
-	y[1] = 0;
-	}
-	else{
-	r = guess2;
-	y[0] = chi_B*(1 + eps);
-	//y[1] = chameleon_der(r, m, eps);
-	y[1] = chi_B*eps*(m*r - 1) / r;
-	}
-
-	while (r < 1 / m_inf){
-	Runge_Kutta_adap_step(r, y, h, err, f, 2);
-	if (y[0] <= 0){
-	break;
-	}
-	}
-
-	// f2 = y[0] - y_max;
-	f2 = (m_inf*r + 1) / r*(y[0] - 1) + y[1];
-	} while (f1*f2 > 0);
-
-	while ((y_0_acc) && (y_max_acc)){
-	guess_h = guess2;
-	guess2 = (guess2 + guess1) / 2;
-
-	r = guess2;
-	y[0] = chi_B*(1 + eps);
-	//y[1] = chameleon_der(r, m, eps);
-	y[1] = chi_B*eps*(m*r - 1) / r;
-
-	while (r < 1 / m_inf){
-	Runge_Kutta_adap_step(r, y, h, err, f, 2);
-	if (y[0] <= 0){
-	break;
-	}
-	}
-
-	fh = f2;
-	// f2 = y[0] - y_max;
-	f2 = (m_inf*r + 1) / r*(y[0] - 1) + y[1];
-	if (f1*f2 > 0){
-	guess1 = guess_h;
-	f1 = fh;
-	}
-
-	y_0_acc = (abs(guess1 - guess2) / guess2) > 1e-6;
-	if (y_max == 0) y_max_acc = abs(f2) > 1e-5;
-	else y_max_acc = abs(f2 / y_max) > 1e-4;
-	}
-
-	return guess2;
-
-	*/
 }
 
 double shoot_meth_NFW(double err, double eps){
@@ -585,6 +515,7 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 	double chi_vec[2] = { chi_pot_0, chi_der_0 };
 
 	if (abs(chi_pot_0 - chi_B) / chi_B < eps){ // non-linear regime
+		BOOST_LOG_TRIVIAL(info) << "Chameleon field in the screened regime. Getting <r2>...";
 		double m = chi_mass(chi_B);
 		double r2;
 		if (R_eq>0){
@@ -596,8 +527,8 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 			chi.push_back(0, chi_B*(1 + eps), 0);
 		}
 
+		BOOST_LOG_TRIVIAL(info) << "<r2> calculated as <" << r2 << ">. Filling analytical values from 0 to r2.";
 		double shr_d_shr2, chr_d_shr2; // sinh(r) / sinhr(r2), cosh(r) / sinhr(r2)
-
 		for (r = step; r < r2; r += step){
 			i++;
 
@@ -622,13 +553,16 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 			chi_vec[1] = chi_B*eps / r2*(m*r2 / tanh(m*r2) - 1);
 		}
 	}
-	else i--;
-	//	auto fce_min_star = bind(fce_min, placeholders::_1, placeholders::_2, placeholders::_3, 0, -1);
+	else
+	{
+		i--;
+		BOOST_LOG_TRIVIAL(info) << "Chameleon field in the linear regime.";
+	}
+	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r << "> to 1/m_inf<" << 1/m_inf << ">.";
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
-	//	double s=0;
-
 	integrate_cout(r, chi_vec, integrate_star, err, chi_vec_eq, 2, chi, step, 1, i);
 
+	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r << "> to r_max<" << r_max << ">.";
 	double a = chi_vec[1] * r*r*exp(m_inf*r) / (m_inf*r + 1);
 	chi_vec_eq[0] = bind(chi_0_der_lin, placeholders::_1, placeholders::_2, a);
 	while (r < r_max){
@@ -645,20 +579,20 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step){
 	slv_Chameleon_star(r_max, err, chi, step);
 	
-	const size_t size = chi.size();
+	// const size_t size = chi.size();
 
-	// potential
-	cout << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
-	for (size_t j = 0; j < size; j++){
-		cout << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
-	}
+	// // potential
+	// cout << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
+	// for (size_t j = 0; j < size; j++){
+	// 	cout << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
+	// }
 
 
-	// forces
-	cout << "\n\n# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
-	for (size_t j = 1; j < size; j++){
-		cout << chi[0][j] / R << "	" << chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
-	}
+	// // forces
+	// cout << "\n\n# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
+	// for (size_t j = 1; j < size; j++){
+	// 	cout << chi[0][j] / R << "	" << chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
+	// }
 }
 
 void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
@@ -674,8 +608,10 @@ void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
 	fce_min_chi_0(s, r, chi_vec);
 
 	if (s == 0){ // screening regime
+		BOOST_LOG_TRIVIAL(info) << "Chameleon field in the screened regime. Getting <r2>...";
 		double m;
 		double r2 = shoot_meth_NFW(err, eps);
+		BOOST_LOG_TRIVIAL(info) << "<r2> calculated as <" << r2 << ">. Filling analytical values from 0 to r2.";
 		chi.push_back(0, 0, 0);
 		double shr_d_shr2, chr_d_shr2;
 		for (r = step; r < r2; r += step){
@@ -700,14 +636,18 @@ void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
 		chi_vec[0] = chi_bulk_r(r)*(1 + eps);
 		chi_vec[1] = chi_bulk_der(r)*(1 + eps) + chi_bulk_r(r)*eps / r*(m*r / tanh(m*r) - 1);
 	}
-	else i--;
+	else
+	{
+		i--;
+		BOOST_LOG_TRIVIAL(info) << "Chameleon field in the linear regime.";
+	}
 
+	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r << "> to 1/m_inf<" << 1/m_inf << ">.";
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / (1 * m_inf));
-
 	integrate_cout(r, chi_vec, integrate_star, err, chi_vec_eq, 2, chi, step, 1, i);
 
+	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r << "> to r_max<" << r_max << ">.";
 	double a = chi_vec[1] * r*r*exp(m_inf*r) / (m_inf*r + 1);
-
 	chi_vec_eq[0] = bind(chi_0_der_lin, placeholders::_1, placeholders::_2, a);
 	while (r < r_max){
 		Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 1);
@@ -723,19 +663,19 @@ void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
 
 void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	slv_Chameleon_NFW(r_max, err, chi, step);
-	const size_t size = chi.size();
-	// potential
-	cout << "# r/r_s	-\Phi_N(r)	\delta\phi(r)/(2\beta\Mpl)" << endl;
-	for (size_t j = 0; j< size; j++){
-		cout << chi[0][j] / R << "	" << -pot_NFW(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
-	}
+	// const size_t size = chi.size();
+	// // potential
+	// cout << "# r/r_s	-\Phi_N(r)	\delta\phi(r)/(2\beta\Mpl)" << endl;
+	// for (size_t j = 0; j< size; j++){
+	// 	cout << chi[0][j] / R << "	" << -pot_NFW(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
+	// }
 
-	// forces
-	double r, Mr;
-	cout << "# r/r_s	-F_N	-F_\phi" << endl;
-	for (size_t j = 0; j < size; j++){
-		cout << chi[0][j] / R << "	" << chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
-	}
+	// // forces
+	// double r, Mr;
+	// cout << "# r/r_s	-F_N	-F_\phi" << endl;
+	// for (size_t j = 0; j < size; j++){
+	// 	cout << chi[0][j] / R << "	" << chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
+	// }
 }
 
 double get_R200(){

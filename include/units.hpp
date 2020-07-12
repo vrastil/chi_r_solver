@@ -27,4 +27,3 @@ double chi_cu_to_phys(double chi_cu);
 */
 double get_v_eff_der_prefactor();
 double get_v_eff_2nd_der_prefactor();
-double get_star_2a_prefactor();

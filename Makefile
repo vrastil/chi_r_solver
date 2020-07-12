@@ -1,7 +1,7 @@
 CXX	 		:= g++
 OPT 		:= -fPIC -std=c++11 -pthread -flto=jobserver -MMD -MP
 ARCH	 	:= native
-OPTIMIZE	:= -Ofast -march=${ARCH} -mtune=${ARCH}
+OPTIMIZE	:= -Ofast -march=${ARCH} -mtune=${ARCH} -Wall
 CXXFLAGS 	:= $(OPT) $(OPTIMIZE)
 LDFLAGS 	:= -lboost_program_options -lboost_filesystem -lboost_system -lboost_log
 

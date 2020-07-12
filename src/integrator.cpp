@@ -1,6 +1,9 @@
 // runge_integ_root.h
 //
 
+#define BOOST_LOG_DYN_LINK 1
+#include <boost/log/trivial.hpp>
+
 #include <math.h>
 #include "integrator.hpp"
 
@@ -153,7 +156,9 @@ double integrate_fmax(double s, std::function<bool(double, double*)>t_max, std::
 	double *y = (double*)malloc(dim*sizeof(double));
 	double t = 0;
 	integrate(s, t, y, t_max, fce_min, err, f_diff, dim);
-	return fce_max(t, y);
+	err = fce_max(t, y);
+	free(y);
+	return err;
 }
 
 void root_finder(double &x1, double &x2, std::function<double(double)> fce_x, double f_eq, double x_rtol, double x_atol, double f_atol){
@@ -236,9 +241,12 @@ double shoot_meth(double s1, double mlt, std::function<bool(double, double*)>t_m
 	// boundary conditions at t_max are specified in fce_max, return 0 if achieved
 	double s2 = 0;
 
+	BOOST_LOG_TRIVIAL(info) << "Start shooting method with s1<" << s1 << "> and mlt<" << mlt << ">";
 	auto fce_s = bind(integrate_fmax, std::placeholders::_1, t_max, fce_min, fce_max, err, f_diff, dim);
 	get_x1_x2(s1, s2, fce_s, mlt);
+	BOOST_LOG_TRIVIAL(info) << "Start root-finder method with s1<" << s1 << "> and s2<" << s2 << ">";
 	root_finder(s1, s2, fce_s, scale);
+	BOOST_LOG_TRIVIAL(info) << "Get root with s1<" << s1 << ">.";
 	return s1;
 }
 

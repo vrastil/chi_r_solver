@@ -122,21 +122,3 @@ double get_v_eff_2nd_der_prefactor()
     // return mass in the right computing units such that [m*R] = 1
     return (1 - param.chi_opt.n) * param.chi_opt.beta / M_PL * param.spatial.rho_0 / get_chi_0();
 }
-
-double get_star_2a_prefactor()
-{
-    switch (param.integration.mod)
-    {
-        case MOD_STAR:
-        {
-            // density in 1/R_sun^2
-            return 2 * param.chi_opt.Ys * M_PL * M_PL / DENSITY_UNITS_STAR; 
-        }
-        case MOD_NFW:
-        {
-            // density in 1/pc^2
-            return 2 * param.chi_opt.Ys * M_PL * M_PL / DENSITY_UNITS_HALO;
-        }
-    }
-    
-}
