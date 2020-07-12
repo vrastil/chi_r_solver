@@ -10,7 +10,7 @@ OBJ_DIR		:= $(BUILD)/objects
 APP_DIR		:= $(BUILD)
 TARGET 		:= main.a
 INCLUDE	  	:= -Iinclude/
-SRC 		:= src/main.cpp src/integrator.cpp src/io.cpp src/stars_NFW.cpp
+SRC 		:= src/main.cpp src/integrator.cpp src/io.cpp src/stars_NFW.cpp src/units.cpp
 
 OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 DEPS 	 := $(OBJECTS:.o=.d)

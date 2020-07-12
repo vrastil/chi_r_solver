@@ -1,20 +1,22 @@
 #pragma once
 
+#include <cstddef>
 #include <cmath>
-#include <cstdint>
 #include <string>
 #include <array>
 #include <vector>
 
-typedef uint8_t mod_t;
+typedef std::size_t mod_t;
 
+#define MOD_STAR 0
+#define MOD_NFW  1
 
-// const double G = 6.67384E-11; // gravitation constatnt
-static const double G = 6.71E-57; // gravitation constatnt, eV
-static const double M_PL = sqrt(1 / (8 * M_PI*G));// Planck mass
+#define MOD_M200_DERIVED 0
+#define MOD_RHOC_DERIVED 1
 
-#define M_SUN_TO_EV(m) (m*M_PL/4.34e-9 * 1.9891e42)
-
+#define MOD_CHI_RHOC_DERIVED 0
+#define MOD_CHI_REQ_DERIVED  1
+#define MOD_CHI_YS_DERIVED   2
 
 class Parameters
 {
@@ -23,23 +25,20 @@ public:
     void init();
 
     /********************
-     * GENERIC
+     * GENERIC / INTEGRATION
      ********************/
     struct {
         mod_t mod;
-        mod_t reg_halo;
-        mod_t reg_rho;
-    } generic;
-
-    struct {
         double err;
         double step;
         double r_max;
         size_t h_N;
         size_t h_re;
+        // chi[0] -- radius
+        // chi[1] -- potential
+        // chi[2] -- derivative (force WITHOUT -beta/M_PL factor)
         std::array<std::vector<double>, 3> chi;
     } integration;
-    /********************/
 
     /********************
      * SPATIAL PROPERTIES
@@ -51,11 +50,10 @@ public:
         double R200;
         double rho_c;
         double rho_0;
-        double Ms;
-        double M200; // mass of the halo in eV
+        double M200; // mass of the halo in [kpc]
+        double Ms; // 4 PI rho R3 in [kpc]
         double M200_sun; // mass of the halo in solar units / 1e12
     } spatial;
-    /********************/
 
     /********************
      * CHAMELEON
@@ -65,23 +63,17 @@ public:
         double beta;
         double Ys;
 
-        double chi_0;
         double chi_B;
         double m_inf;
     } chi_opt;
-    /********************/
-
 
     /********************
      * INPUT / OUTPUT
      ********************/
     struct {
         std::string out_dir;
+        bool print_par;
     } out_opt;
-    /********************/
-
-    // int h_re;
-
 };
 
 extern Parameters param;

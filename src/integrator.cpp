@@ -139,12 +139,13 @@ void integrate(double s, double &t, double *y, std::function<bool(double, double
 	}
 }
 
-void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_max, double err, t_function *f_diff, int dim, double **chi, double step, double mlt, int reg, int &i){
+void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_max, double err, t_function *f_diff, int dim, double **chi, double step, double mlt, int &i){
 	double h = step;
 	double h_max = step;
 	i++;
 	chi[0][i] = t;
-	chi[1][i] = y[reg] * mlt;
+	chi[1][i] = y[0];
+	chi[2][i] = y[1];
 	while (t_max(t, y)){
 	//	Runge_Kutta_adap_step(t, y, h, err, f_diff, dim);
 		Runge_Kutta_adap_step(t, y, h, 0,h_max, err, f_diff, dim);
@@ -159,7 +160,8 @@ void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_
 			i++;
 			if_low_memory(i, &param.integration.h_N, param.integration.h_re, chi,2);
 			chi[0][i] = t;
-			chi[1][i] = y[reg] * mlt;
+			chi[1][i] = y[0];
+			chi[2][i] = y[1];
 		}
 	}
 }
