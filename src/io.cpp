@@ -22,7 +22,7 @@
 
 namespace po = boost::program_options;
 
-#define MAX_MEMORY_SIZE (std::size_t)(10000)
+constexpr size_t MAX_MEMORY_SIZE = 1024UL * 1024UL * 1024UL * 2UL; // 2 GB
 
 /****************************//**
  * PUBLIC FUNCTIONS DEFINITIONS *
@@ -108,8 +108,6 @@ void Parameters::print_info() const
         "\terr = " << param.integration.err << "\n"
         "\tstep = " << param.integration.step << "\n"
         "\tr_max = " << param.integration.r_max << "\n"
-        "\th_N = " << param.integration.h_N << "\n"
-        "\th_re = " << param.integration.h_re << "\n"
 
         "\nSpatial parameters:\n"
         "\tc = " << param.spatial.c << "\n"
@@ -145,13 +143,8 @@ void Parameters::init()
     // INTEGRATION
     integration.step = spatial.R / 10;
 	integration.r_max = 10 / chi_opt.m_inf;
-	integration.h_N = std::min((size_t)(spatial.R200/integration.step+log(integration.r_max/integration.step)), MAX_MEMORY_SIZE);
-	integration.h_re = (size_t)(log(integration.r_max/integration.step));
 
     // ALLOCATION
-    for (auto vec : integration.chi)
-    {
-        vec.reserve(integration.h_N);
-    }
-
+    size_t capacity = std::min((size_t)(spatial.R200/integration.step+log(integration.r_max/integration.step)), MAX_MEMORY_SIZE);
+    integration.chi.reserve(capacity);
 }

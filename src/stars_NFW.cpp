@@ -16,12 +16,6 @@
 using namespace std;
 
 #define mod param.integration.mod
-
-// #define r_max (param.integration.r_max)
-// #define err (param.integration.err)
-// #define step (param.integration.step)
-#define h_N param.integration.h_N
-#define h_re param.integration.h_re
 // #define chi (param.integration.chi)
 
 #define R param.spatial.R
@@ -77,34 +71,42 @@ static bool is_integrate(double r, double *y, double r_max);
 static void fce_min_r2(double s, double &t_0, double *y_0, double eps, double m);
 static void fce_min_chi_0(double s, double &t_0, double *y_0);
 static double fce_max(double r, double *y);
+
 static double shoot_meth_star(double err, double eps);
 static double shoot_meth_NFW(double err, double eps);
-static void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err, double **chi, double step, int &N_i);
+
+static void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err, chi_t& chi, double step);
+
 static double get_chi_0_star(double err, double eps);
 static double get_chi_0_NFW(double err, double eps);
-static void slv_Chameleon_star(double r_max, double err, double **chi, double &step, int &N_i);
-static void slv_Chameleon_star(double r_max, double err, double **chi, double &step, int &N_i, int *cout_max);
-static void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int &N_i);
-static void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int &N_i, int *cout_max);
+
+static void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step);
+static void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step);
+static void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step);
+static void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step);
 
 static double V_EFF_DER_PREFACTOR;
 static double V_EFF_2ND_DER_PREFACTOR;
 
 void solve()
 {
-	int N_i;
+	// extract / define variables
+	const double r_max = param.integration.r_max;
+	const double err = param.integration.err;
+	double step = param.integration.step;
+	chi_t& chi = param.integration.chi;
 
 	switch (mod){
 		case MOD_STAR:
 		{
 			BOOST_LOG_TRIVIAL(info) << "Start solving the chameleon field for STAR.";
-			// slv_Chameleon_star(r_max, err, chi, step, N_i, &N_i);
+			slv_Chameleon_star_cout(r_max, err, chi, step);
 			break;
 		}
 		case MOD_NFW:
 		{
 			BOOST_LOG_TRIVIAL(info) << "Start solving the chameleon field for NFW.";
-			// slv_Chameleon_NFW(r_max, err, chi, step, N_i, &N_i);s
+			slv_Chameleon_NFW_cout(r_max, err, chi, step);
 			break;
 		}
 	}
@@ -411,7 +413,7 @@ double shoot_meth_NFW(double err, double eps){
 	return shoot_meth(s1, 0.5, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
 }
 
-void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err, double **chi, double step, int &N_i){
+void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err, chi_t& chi, double step){
 
 	t_function chi_vec_eq[] = { chi_0_der, chi_1_der };
 	double h = step;
@@ -419,19 +421,14 @@ void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err,
 	double chi_vec[2] = { chi_pot_0, chi_der_0 };
 	int i = 0;
 
-	chi[0][i] = r;
-	chi[1][i] = chi_vec[0];
-	chi[2][i] = chi_vec[1];
+	chi.push_back(r, chi_vec[0], chi_vec[1]);
 	while (r < r_max){
 		Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 2);
 		if ((r - chi[0][i]) >= step){
 			i++;
-			chi[0][i] = r;
-			chi[1][i] = chi_vec[0];
-			chi[2][i] = chi_vec[1];
+			chi.push_back(r, chi_vec[0], chi_vec[1]);
 		}
 	}
-	N_i = i;
 }
 
 double get_chi_0_star(double err, double eps){
@@ -575,7 +572,7 @@ double get_chi_0_NFW(double err, double eps){
 	*/
 }
 
-void slv_Chameleon_star(double r_max, double err, double **chi, double &step, int &N_i){
+void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 	double h = step;
 	double eps = 1e-2;
 	t_function chi_vec_eq[] = { chi_0_der, chi_1_der };
@@ -592,22 +589,17 @@ void slv_Chameleon_star(double r_max, double err, double **chi, double &step, in
 		double r2;
 		if (R_eq>0){
 			r2 = shoot_meth_star(err, eps);
-			chi[0][i] = 0;
-			chi[1][i] = chi_B*(1 + eps*m*r2 / sinh(m*r2));
-			chi[2][i] = 0;
+			chi.push_back(0, chi_B*(1 + eps*m*r2 / sinh(m*r2)), 0);
 		}
 		else{
 			r2 = 0;
-			chi[0][i] = 0;
-			chi[1][i] = chi_B*(1 + eps);
-			chi[2][i] = 0;
+			chi.push_back(0, chi_B*(1 + eps), 0);
 		}
 
 		double shr_d_shr2, chr_d_shr2; // sinh(r) / sinhr(r2), cosh(r) / sinhr(r2)
 
 		for (r = step; r < r2; r += step){
 			i++;
-			chi[0][i] = r;
 
 			if (m*r>30){
 				shr_d_shr2 = exp(m*(r - r2)); // approximation 2*sinh(x)=e^x
@@ -617,9 +609,7 @@ void slv_Chameleon_star(double r_max, double err, double **chi, double &step, in
 				shr_d_shr2 = sinh(m*r) / sinh(m*r2);
 				chr_d_shr2 = cosh(m*r) / sinh(m*r2);
 			}
-
-			chi[1][i] = chi_B*(1 + eps*r2 / r * shr_d_shr2);
-			chi[2][i] = chi_B*eps * r2 / (r*r)*(m*r*chr_d_shr2 - shr_d_shr2);
+			chi.push_back(r, chi_B*(1 + eps*r2 / r * shr_d_shr2), chi_B*eps * r2 / (r*r)*(m*r*chr_d_shr2 - shr_d_shr2));
 		}
 		if ((R - r2) / R < 1e-6){ // no-shell solution
 			r = R;
@@ -647,32 +637,31 @@ void slv_Chameleon_star(double r_max, double err, double **chi, double &step, in
 		if ((r - chi[0][i]) >= step){
 			step *= 2;
 			i++;
-			chi[0][i] = r;
-			chi[1][i] = chi_vec[0];
-			chi[2][i] = chi_vec[1];
+			chi.push_back(r, chi_vec[0], chi_vec[1]);
 		}
 	}
-	N_i = i;
 }
 
-void slv_Chameleon_star(double r_max, double err, double **chi, double &step, int &N_i, int *cout_max){
-	slv_Chameleon_star(r_max, err, chi, step, N_i);
+void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step){
+	slv_Chameleon_star(r_max, err, chi, step);
+	
+	const size_t size = chi.size();
 
 	// potential
 	cout << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
-	for (int j = 0; j<*cout_max; j++){
+	for (size_t j = 0; j < size; j++){
 		cout << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
 	}
 
 
 	// forces
-	cout << "# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
-	for (int j = 1; j < *cout_max; j++){
+	cout << "\n\n# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
+	for (size_t j = 1; j < size; j++){
 		cout << chi[0][j] / R << "	" << chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
 	}
 }
 
-void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int &N_i){
+void slv_Chameleon_NFW(double r_max, double err, chi_t& chi, double &step){
 	double h = step;
 	double eps = 1e-2;
 	t_function chi_vec_eq[] = { chi_0_der, chi_1_der };
@@ -687,14 +676,11 @@ void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int
 	if (s == 0){ // screening regime
 		double m;
 		double r2 = shoot_meth_NFW(err, eps);
-		chi[0][i] = 0;
-		chi[1][i] = 0;
+		chi.push_back(0, 0, 0);
 		double shr_d_shr2, chr_d_shr2;
 		for (r = step; r < r2; r += step){
 			i++;
-			if_low_memory(i, &h_N, h_re, chi, 2);
 			m = chi_mass2(chi_bulk_r(r));
-			chi[0][i] = r;
 
 			if (m*r>30){ // approximation for m*r>>1
 				shr_d_shr2 = exp(m*(r - r2)); // approximation 2*sinh(x)=e^x
@@ -704,9 +690,10 @@ void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int
 				shr_d_shr2 = sinh(m*r) / sinh(m*r2);
 				chr_d_shr2 = cosh(m*r) / sinh(m*r2);
 			}
-
-			chi[1][i] = chi_bulk_r(r)*(1 + eps*r2 / r * shr_d_shr2);
-			chi[2][i] = (chi_bulk_der(r)*(1 + eps*r2 / r * shr_d_shr2) + chi_bulk_r(r)*eps * r2 / (r*r)*(m*r*chr_d_shr2 - shr_d_shr2));
+			
+			chi.push_back(r, chi_bulk_r(r)*(1 + eps*r2 / r * shr_d_shr2),
+							 (chi_bulk_der(r)*(1 + eps*r2 / r * shr_d_shr2) + 
+							  chi_bulk_r(r)*eps * r2 / (r*r)*(m*r*chr_d_shr2 - shr_d_shr2)));
 		}
 		r = r2;
 		m = chi_mass(chi_bulk_r(r));
@@ -715,30 +702,11 @@ void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int
 	}
 	else i--;
 
-	//	auto fce_min_star = bind(fce_min, placeholders::_1, placeholders::_2, placeholders::_3, 0, -1);
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / (1 * m_inf));
-	//	double s=0;
 
 	integrate_cout(r, chi_vec, integrate_star, err, chi_vec_eq, 2, chi, step, 1, i);
 
 	double a = chi_vec[1] * r*r*exp(m_inf*r) / (m_inf*r + 1);
-	// double b = -(chi_vec[0] - 1)*r*exp(m_inf*r);
-	//	a = b;
-	//	a = (a+10*b)/11;
-
-	//if (reg == 0) a = -(chi_vec[0] - 1)*r*exp(m_inf*r);
-	//else  a = chi_vec[1] * r*r*exp(m_inf*r) / (m_inf*r + 1);
-	/*
-	while (r < r_max){
-	r += step;
-	step *= 2;
-	i++;
-	if_low_memory(i, &h_N, h_re, chi, 2);
-	chi[0][i] = r;
-	if (reg == 0) chi[1][i] = 1 - a*exp(-m_inf*r) / r;
-	else chi[1][i] = -mlt*a*exp(-m_inf*r) / (r*r)*(m_inf*r + 1);
-	}
-	*/
 
 	chi_vec_eq[0] = bind(chi_0_der_lin, placeholders::_1, placeholders::_2, a);
 	while (r < r_max){
@@ -748,29 +716,24 @@ void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int
 		if ((r - chi[0][i]) >= step){
 			step *= 2;
 			i++;
-			if_low_memory(i, &h_N, h_re, chi, 2);
-			chi[0][i] = r;
-			chi[1][i] = chi_vec[0];
-			chi[2][i] = chi_vec[1];
+			chi.push_back(r, chi_vec[0], chi_vec[1]);
 		}
 	}
-
-	N_i = i;
 }
 
-void slv_Chameleon_NFW(double r_max, double err, double **chi, double &step, int &N_i, int *cout_max){
-	slv_Chameleon_NFW(r_max, err, chi, step, N_i);
-
+void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
+	slv_Chameleon_NFW(r_max, err, chi, step);
+	const size_t size = chi.size();
 	// potential
 	cout << "# r/r_s	-\Phi_N(r)	\delta\phi(r)/(2\beta\Mpl)" << endl;
-	for (int j = 0; j<*cout_max; j++){
+	for (size_t j = 0; j< size; j++){
 		cout << chi[0][j] / R << "	" << -pot_NFW(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
 	}
 
 	// forces
 	double r, Mr;
 	cout << "# r/r_s	-F_N	-F_\phi" << endl;
-	for (int j = 0; j < *cout_max; j++){
+	for (size_t j = 0; j < size; j++){
 		cout << chi[0][j] / R << "	" << chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
 	}
 }

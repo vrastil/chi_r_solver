@@ -2,8 +2,6 @@
 //
 
 #include <math.h>
-
-#include "io.hpp"
 #include "integrator.hpp"
 
 static void Runge_Kutta_adap_step(double &t_0, double *y_0, double &h_in, double h_min, double h_max, double atol,
@@ -122,15 +120,6 @@ void Runge_Kutta_adap_step(double &t_0, double *y_0, double &h_in, double h_min,
 	Runge_Kutta_adap_step(t_0, y_0, h_in, h_min, h_max, err, f, dim, N_iter);
 }
 
-void if_low_memory(size_t i, size_t* i_max, size_t i_re, double **chi, int dim){
-	if (i >= *i_max){
-		for (int j = 0; j < dim; j++){
-			chi[j] = (double*)realloc(chi[j], (*i_max + i_re)*sizeof(double));
-		}
-		*i_max += i_re;
-	}
-}
-
 void integrate(double s, double &t, double *y, std::function<bool(double, double*)>t_max, std::function<void(double, double &, double*)>fce_min, double err, t_function *f_diff, int dim){
 	double h = 1;
 	fce_min(s, t, y);
@@ -139,15 +128,12 @@ void integrate(double s, double &t, double *y, std::function<bool(double, double
 	}
 }
 
-void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_max, double err, t_function *f_diff, int dim, double **chi, double step, double mlt, int &i){
+void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_max, double err, t_function *f_diff, int dim, chi_t& chi, double step, double mlt, int &i){
 	double h = step;
 	double h_max = step;
 	i++;
-	chi[0][i] = t;
-	chi[1][i] = y[0];
-	chi[2][i] = y[1];
+	chi.push_back(t, y[0], y[1]);
 	while (t_max(t, y)){
-	//	Runge_Kutta_adap_step(t, y, h, err, f_diff, dim);
 		Runge_Kutta_adap_step(t, y, h, 0,h_max, err, f_diff, dim);
 		if (t > param.spatial.R) {
 			h_max = param.spatial.R;
@@ -158,10 +144,7 @@ void integrate_cout(double &t, double *y, std::function<bool(double, double*)>t_
 		if ((t - chi[0][i]) >= step){
 			if(t>param.spatial.R) step *= 1.5;
 			i++;
-			if_low_memory(i, &param.integration.h_N, param.integration.h_re, chi,2);
-			chi[0][i] = t;
-			chi[1][i] = y[0];
-			chi[2][i] = y[1];
+			chi.push_back(t, y[0], y[1]);
 		}
 	}
 }
