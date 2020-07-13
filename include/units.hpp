@@ -22,10 +22,6 @@ double density_to_halo_cu(double omega_m);
 */
 double density_to_sun_cu(double omega_m);
 
-/* converts chameleon field in units of chi_0,
-   i.e. computing units, to physical units
-*/
-double chi_cu_to_phys(double chi_cu);
 
 /*
 */

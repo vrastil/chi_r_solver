@@ -3,9 +3,13 @@
 #include "units.hpp"
 #include "io.hpp"
 
+
+/***************************
+ * CONSTANTS, CONVERSIONS
+ ***************************/
+
 // critical density of the Universe; [kg / m^3]
 constexpr double CRITICAL_DENSITY = 8.5E-27;
-// constexpr double CRITICAL_DENSITY = 1;
 
 // Hubble constants; [1/s]
 constexpr double H0 = 4.55E17;
@@ -30,8 +34,6 @@ constexpr double RED_PLANCK_CON = 6.582E-16;
 
 // Planck mass; natural units [eV]
 constexpr double M_PL = sqrt(1 / (8 * M_PI*GRAV_CON));
-// constexpr double M_PL = 2.435E27;
-// constexpr double M_PL = 1;
 
 // conversion from kg*c^2 to eV; [eV / kg]
 constexpr double KG_TO_EV = LIGHT_SPEED * LIGHT_SPEED / ELECTRON_C;
@@ -42,25 +44,31 @@ constexpr double M_TO_EV = RED_PLANCK_CON / (LIGHT_SPEED * M_PL);
 // kiloparsec; [m]
 constexpr double KPC = 3.086E19; // m
 
+/***************************
+ * USED UNITS
+ ***************************/
+
 // halo mass multiplier from input value
 constexpr double HALO_MASS_MLT = 1E12;
 
 // computational units for mass in case of NFW halo; [eV]
-// constexpr double MASS_UNITS_HALO = GRAV_CON * KG_TO_EV / KPC;
-// constexpr double MASS_UNITS_HALO = GRAV_CON * KG_TO_EV;
 constexpr double MASS_UNITS_HALO = KG_TO_EV;
 
 // computational units for mass in case of star; [eV]
-// constexpr double MASS_UNITS_STAR = GRAV_CON * KG_TO_EV / SUN_RADIUS;
-// constexpr double MASS_UNITS_STAR = GRAV_CON * KG_TO_EV;
 constexpr double MASS_UNITS_STAR = KG_TO_EV;
 
-// computational units for density in case of NFW halo; [eV/kpc^3]
-// constexpr double DENSITY_UNITS_HALO = MASS_UNITS_HALO *  (KPC * KPC * KPC);
+// computational units for distance in case of NFW halo; [m]
+constexpr double DISTANCE_UNITS_HALO = KPC;
+
+// computational units for mass in case of star; [m]
+constexpr double DISTANCE_UNITS_STAR = SUN_RADIUS;
+
+// computational units for density in case of NFW halo; [eV/m^3]
+// !!! REQUIRED !!! [mass] = [density] * [distance]^3
 constexpr double DENSITY_UNITS_HALO = MASS_UNITS_HALO;
 
-// computational units for density in case of star; [eV/R_sun^3]
-// constexpr double DENSITY_UNITS_STAR = MASS_UNITS_STAR * (SUN_RADIUS * SUN_RADIUS * SUN_RADIUS);
+// computational units for density in case of star; [eV/m^3]
+// !!! REQUIRED !!! [mass] = [density] * [distance]^3
 constexpr double DENSITY_UNITS_STAR = MASS_UNITS_STAR;
 
 double phi_prefactor;
@@ -75,11 +83,11 @@ static double get_chi_0()
    to computing units [R_sun] */
 double star_radius_to_cu(double star_rad)
 {
-    return star_rad * SUN_RADIUS;
+    return star_rad * DISTANCE_UNITS_STAR;
 }
 
 /* convertes halo mass in units of the sun * 1E12
-   to computing units [kpc] */
+   to computing units [eV] */
 double halo_mass_to_cu(double mass_halo)
 {
     double mass_kg = mass_halo * HALO_MASS_MLT * SUN_MASS; // kg
@@ -88,7 +96,7 @@ double halo_mass_to_cu(double mass_halo)
 
 
 /* convertes star mass in units of the sun
-   to computing units [R_sun] */
+   to computing units [eV] */
 double star_mass_to_cu(double mass_halo)
 {
     double mass_kg = mass_halo * SUN_MASS; // kg
@@ -96,7 +104,7 @@ double star_mass_to_cu(double mass_halo)
 }
 
 /* converts density in units of the critical density
-   to computing units [kpc2]
+   to computing units [eV/m3]
 */
 double density_to_halo_cu(double omega_m)
 {
@@ -105,7 +113,7 @@ double density_to_halo_cu(double omega_m)
 }
 
 /* converts density in units of the critical density
-   to computing units [R_sun2]
+   to computing units [eV/m3]
 */
 double density_to_sun_cu(double omega_m)
 {
@@ -113,36 +121,10 @@ double density_to_sun_cu(double omega_m)
     return density * DENSITY_UNITS_STAR;
 }
 
-/* converts chameleon field in units of chi_0,
-   i.e. computing units, to physical units
-*/
-double chi_cu_to_phys(double chi_cu)
-{
-    return chi_cu*get_chi_0();
-}
-
 
 /* get prefactors for poisson / chameleon EoM */
 void get_phi_prefactor()
 {
-    double R_units;
-    switch (param.integration.mod)
-    {
-        case MOD_STAR:
-        {
-           R_units = SUN_RADIUS;
-           break;
-        }
-        case MOD_NFW:
-        {
-           R_units = KPC;
-           break;
-        }
-    }
-    
-    R_units = 1;
-    phi_prefactor = 3/2.*param.spatial.Omega_m*pow(H0 * R_units / LIGHT_SPEED ,2) * param.spatial.rho_0;
-    phi_prefactor /= 4*M_PI;
     phi_prefactor = GRAV_CON;
 }
 
@@ -152,23 +134,7 @@ void get_chi_prefactor()
     // first initialize phi_prefactor
     if (!phi_prefactor) get_phi_prefactor();
 
-    double R_units;
-    switch (param.integration.mod)
-    {
-        case MOD_STAR:
-        {
-           R_units = SUN_RADIUS;
-           break;
-        }
-        case MOD_NFW:
-        {
-           R_units = KPC;
-           break;
-        }
-    }
-    
-    R_units = 1;
-    chi_prefactor = 4*M_PI*phi_prefactor*pow(R_units ,2) / param.chi_opt.Ys; // / param.spatial.rho_0;
+    chi_prefactor = 4*M_PI*phi_prefactor / param.chi_opt.Ys; // / param.spatial.rho_0;
 }
 
 double get_force_mlt()
@@ -204,11 +170,11 @@ double get_radius_scale()
     {
         case MOD_STAR:
         {
-            return SUN_RADIUS;
+            return DISTANCE_UNITS_STAR;
         }
         case MOD_NFW:
         {
-            return KPC;
+            return DISTANCE_UNITS_HALO;
         }
     }
 

@@ -191,12 +191,14 @@ double chi_bulk(double rho){
 }
 
 double chi_bulk_der(double r){
+	double chi_bulk_der;
 	double x = r / R;
+	
 	switch (mod){
-	case MOD_STAR:return 0;
-	case MOD_NFW:return 1 / R*pow(rho_0 / rho_c, 1 / (1 - n_chi)) / (1 - n_chi)*pow(x*(1 + x)*(1 + x), n_chi / (1 - n_chi))*((1 + x)*(1 + x) + 2 * x*(1 + x));
+	case MOD_STAR: chi_bulk_der = 0; break;
+	case MOD_NFW: chi_bulk_der = 1 / R*pow(rho_0 / rho_c, 1 / (1 - n_chi)) / (1 - n_chi)*pow(x*(1 + x)*(1 + x), n_chi / (1 - n_chi))*((1 + x)*(1 + x) + 2 * x*(1 + x)); break;
 	}
-
+	return chi_bulk_der;
 }
 
 double chi_bulk_laplace(double r){
@@ -255,10 +257,6 @@ double chi_1_der(double r, double *chi){
 }
 
 double chi_0_der_NFW_lin(double r, double *chi){
-	/*
-	double m2 = chi_mass2(chi[0]);
-	if (m2 != m2) return 0;
-	*/
 	return chi[1];
 }
 
@@ -309,15 +307,12 @@ void fce_min_chi_0(double s, double &t_0, double *y_0){
 
 double fce_max(double r, double *y){
 	double dchi = y[0] - 1;
-	//	double mlt_err=1;
-	//	if (dchi > 0) mlt_err *= 1000;
 	if (dchi < 0) return (y[1] * r + dchi*(m_inf*r + 1));
 	else return 10 * (y[1] * r + dchi*(m_inf*r + 1));
 }
 
 double shoot_meth_star(double err, double eps){
 	double m = chi_mass(chi_B);
-	double h = 1;
 	double s1;
 
 	if (R_eq > 10*R)
@@ -341,10 +336,7 @@ double shoot_meth_star(double err, double eps){
 }
 
 double shoot_meth_NFW(double err, double eps){
-	// double m = chi_mass(chi_B);
-	double h = 1;
 	double s1 = R_eq;
-	//	s1 = R200;
 	auto fce_min_star = bind(fce_min_r2, placeholders::_1, placeholders::_2, placeholders::_3, eps, 0);
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 	t_function f_diff[] = { chi_0_der, chi_1_der };
@@ -371,144 +363,19 @@ void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err,
 }
 
 double get_chi_0_star(double err, double eps){
-	double h = 1;
 	double s1 = 1 + pot_star(0); // guess from the analytical solution
-	//	auto fce_min_star = bind(fce_min_chi_0, placeholders::_1, placeholders::_2, placeholders::_3);
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 	t_function f_diff[] = { chi_0_der, chi_1_der };
 
 	return shoot_meth(s1, 0.95, integrate_star, fce_min_chi_0, fce_max, err, f_diff, 2, 1*eps);
-
-	/*
-	double f1, f2;
-	double sh, fh;
-	double r;
-	double chi_vec[2];
-	//	double chi_B = 1*pow(rho_0 / (rho + rho_0), 1 / (1 - n_chi));
-	double chi_00, mlt;
-	if ((2*pot_new(0) + Ys) > 0){
-	chi_00 = 1;
-	mlt = 0.8;
-	}
-	else{
-	chi_00 = chi_B;
-	mlt = 2;
-	}
-
-	double a;
-	r = 0;
-	chi_vec[0] = chi_00*s1;
-	chi_vec[1] = chi_der_min;
-
-
-	while (r < 1 / m_inf){
-	Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 2);
-	}
-
-	f1 = (m_inf*r + 1) / r*(chi_vec[0] - 1) + chi_vec[1];
-	//	f1 = chi_vec[0] - chi_max;
-	f2 = f1;
-	do{ // second guess of opposite sign
-	r = 0;
-	s1 = s2;
-	f1 = f2;
-	s2 *= mlt;
-	chi_vec[0] = chi_00*s2;
-	chi_vec[1] = chi_der_min;
-
-	while (r < 1 / m_inf){
-	Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 2);
-	if (chi_vec[0] <= 0){
-	break;
-	}
-	}
-
-
-	f2 = (m_inf*r + 1) / r*(chi_vec[0] - 1) + chi_vec[1];
-	//	f2 = chi_vec[0] - chi_max;
-	} while (f1*f2 > 0);
-
-	return shoot_meth(0, r_max, chi_der_min, chi_max, s1*chi_00, s2*chi_00, err, chi_vec_eq, 1);
-	*/
 }
 
 double get_chi_0_NFW(double err, double eps){
-	double h = 1;
 	double s1 = 1 + pot_NFW(0); // guess from the analytical solution
-	//	auto fce_min_NFW = bind(fce_min_chi_0, placeholders::_1, placeholders::_2, placeholders::_3);
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / (1 * m_inf));
 	t_function f_diff[] = { chi_0_der, chi_1_der };
 
 	return shoot_meth(s1, 0.95, integrate_star, fce_min_chi_0, fce_max, err, f_diff, 2, eps*1*m_inf*1e3);
-	/*
-	double h = step;
-	t_function chi_vec_eq[] = { chi_0_der, chi_1_der };
-	double s1 = 1;
-	double s2 = s1;
-	double f1, f2;
-	double sh, fh;
-	double r;
-	double chi_vec[2];
-	//	double chi_B = 1*pow(rho_0 / (rho + rho_0), 1 / (1 - n_chi));
-	double chi_00, mlt;
-	mlt = 0.8;
-	chi_00 = 1 + 0.8*pot_NFW(r_min); // 0.8 safe factor
-
-	//	double a;
-	r = 0;
-	chi_vec[0] = chi_00*s1;
-	chi_vec[1] = -(chi_vec[0]-1)/(2*R); //Newtonian
-
-
-	while (r < 0.1 / m_inf){
-	Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 2);
-	}
-
-	f1 = (chi_vec[0] - 1) / r + chi_vec[1];
-	f2 = f1;
-	do{ // second guess of opposite sign
-	r = 0;
-	s1 = s2;
-	f1 = f2;
-	s2 *= mlt;
-	chi_vec[0] = chi_00*s2;
-	chi_vec[1] = -(chi_vec[0] - 1) / (2 * R); //Newtonian
-
-	while (r < 0.1 / m_inf){
-	Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 2);
-	}
-
-	f2 = (chi_vec[0] - 1) / r + chi_vec[1];
-	} while (f1*f2 > 0);
-
-	bool y_0_acc = true;
-	bool y_max_acc = true;
-
-	while ((y_0_acc) && (y_max_acc)){
-	sh = s2;
-	s2 = (s2 + s1) / 2;
-
-	r = 0;
-	chi_vec[0] = chi_00*s2;
-	chi_vec[1] = -(chi_vec[0] - 1) / (2 * R); //Newtonian
-	while (r < 0.1 / m_inf){
-	Runge_Kutta_adap_step(r, chi_vec, h, err, chi_vec_eq, 2);
-	}
-
-	fh = f2;
-	f2 = (chi_vec[0] - 1) / r + chi_vec[1];
-
-	if (f1*f2 > 0){
-	s1 = sh;
-	f1 = fh;
-	}
-
-	y_0_acc = (abs(s1 - s2) / s2) > 1e-6;
-	if (chi_max == 0) y_max_acc = abs(f2) > 1e-5;
-	else y_max_acc = abs(f2 / chi_max) > 1e-4;
-	}
-	return chi_00*s2;
-	*/
 }
 
 void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
@@ -596,10 +463,11 @@ void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step)
 	double mlt = get_pot_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing potential into file " << file_name;
-	File << "# r/r_s	-Phi_N	(phi_inf-phi)/(2*beta*M_PL)" << endl;
+	File << "#Radius\tNewtonian potential\tChameleon potential\n";
+	File << "# r/r_s\t-Phi_N\t(phi_inf-phi)/(2*beta*M_PL)\n";
     File << std::scientific;
 	for (size_t j = 0; j < size; j++){
-		File << chi[0][j] / R << "	" << -pot_new(chi[0][j]) << "	" << (1 - chi[1][j])*mlt << endl;
+		File << chi[0][j] / R << "\t" << -pot_new(chi[0][j]) << "\t" << (1 - chi[1][j])*mlt << endl;
 	}
 	File.close();
 
@@ -609,7 +477,8 @@ void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step)
 	mlt = get_force_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
-	File << "# r/r_s	-F_N/M_PL	-F_\phi/M_PL" << endl;
+	File << "#Radius\tChameleon force / Newtonian force\n";
+	File << "# r/r_s\tF_phi/(2beta^2 F_N)\n";
     File << std::scientific;
 	for (size_t j = 1; j < size; j++){
 		File << chi[0][j] / R << "	" << mlt*chi[2][j] / (2 * beta*beta*force_new(chi[0][j])) << endl;
@@ -690,10 +559,11 @@ void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	Ofstream File(file_name);
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing potential into file " << file_name;
-	File << "# r/r_s	-\Phi_N(r)	\delta\phi(r)/(2\beta\Mpl)" << endl;
+	File << "#Radius\tNewtonian potential\tChameleon potential\n";
+	File << "# r/r_s\t-Phi_N\t(phi_inf-phi)/(2*beta*M_PL)\n";
     File << std::scientific;
 	for (size_t j = 0; j < size; j++){
-		File << chi[0][j] / R << "	" << -pot_NFW(chi[0][j]) << "	" << 1 - chi[1][j] << endl;
+		File << chi[0][j] / R << "\t" << -pot_NFW(chi[0][j]) << "\t" << 1 - chi[1][j] << endl;
 	}
 	File.close();
 
@@ -703,10 +573,11 @@ void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	double mlt = get_force_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
-	File << "# r/r_s	-F_N	-F_\phi" << endl;
+	File << "#Radius\tChameleon force / Newtonian force\n";
+	File << "# r/r_s\tF_phi/(2beta^2 F_N)\n";
     File << std::scientific;
 	for (size_t j = 1; j < size; j++){
-		File << chi[0][j] / R << "	" << mlt*chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
+		File << chi[0][j] / R << "\t" << mlt*chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
 	}
 }
 
@@ -739,10 +610,12 @@ double rho_star(double r){
 }
 
 double rho_r(double r){
+	double rho_r;
 	switch (mod){
-	case 0:return rho_star(r);
-	case 1:return rho_NFW(r);
+		case MOD_STAR: rho_r = rho_star(r); break;
+		case MOD_NFW: rho_r = rho_NFW(r); break;
 	}
+	return rho_r;
 }
 
 double pot_NFW(double r){
@@ -758,42 +631,48 @@ double force_NFW(double r){
 }
 
 double pot_new(double r){
+	double pot_new;
 	switch (mod){
-	case 0:return pot_star(r);
-	case 1:return pot_NFW(r);
+		case MOD_STAR: pot_new = pot_star(r); break;
+		case MOD_NFW: pot_new = pot_NFW(r); break;
 	}
+	return pot_new;
 }
 
 double force_new(double r){
+	double force_new;
 	switch (mod){
-	case 0:return force_star(r);
-	case 1:return force_NFW(r);
+		case MOD_STAR: force_new = force_star(r); break;
+		case MOD_NFW: force_new = force_NFW(r); break;
 	}
+	return force_new;
 }
 
 double r_eq_star(){
+	double _r_eq;
 	// linear case
 	if (pot_star(0) + Ys > 0){
 		double r = Ys / abs(pot_star(0)) - 1;
-		return -r * R;
+		_r_eq = -r * R;
 	}
 	// non-linear case, inside the star
 	else if (pot_star(R) + Ys > 0){
-		return sqrt(3*(R*R - Ys / (2 * M_PI*phi_prefactor*rho_c)));
+		_r_eq = sqrt(3*(R*R - Ys / (2 * M_PI*phi_prefactor*rho_c)));
 	}
 	// non-linear case, outside the star
 	else
 	{
-		return 4 * M_PI*rho_c*phi_prefactor / 3 * pow(R, 3) / Ys;
+		_r_eq = 4 * M_PI*rho_c*phi_prefactor / 3 * pow(R, 3) / Ys;
 	}
-
+	return _r_eq;
 }
 
 double r_eq_NFW(){
+	double _r_eq;
 	// linear case
 	if (pot_NFW(0) + Ys > 0){
 		double r = Ys / abs(pot_NFW(0)) - 1;
-		return r / R;
+		_r_eq = r / R;
 	}
 	else
 	{
@@ -803,24 +682,37 @@ double r_eq_NFW(){
 		get_x1_x2(r1, r2, pot_NFW, -Ys, 1.5);
 		root_finder(r1, r2, pot_NFW, -Ys, Ys);
 
-		return r2;
+		_r_eq = r2;
 	}
+	return _r_eq;
 }
 
 double get_r_eq(){
+	double _r_eq;
 	switch (mod){
-	case 0:return r_eq_star();
-	case 1:return r_eq_NFW();
+		case MOD_STAR: _r_eq = r_eq_star(); break;
+		case MOD_NFW: _r_eq = r_eq_NFW(); break;
 	}
+	return _r_eq;
 }
 
 double get_rho_c(double _r_eq){
-	if (_r_eq >= 0) return -rho_c*Ys / pot_new(_r_eq);
-	double x = -_r_eq / R;
-	return get_rho_c(0) / (1 + x);
+	double _rho_c;
+	if (_r_eq >= 0)
+	{
+		_rho_c = -rho_c*Ys / pot_new(_r_eq);
+	}
+	else
+	{
+		double x = -_r_eq / R;
+		_rho_c = get_rho_c(0) / (1 + x);
+	}
+	return _rho_c;
 }
 
 double get_Ys(){
-	if (R_eq < 0) return (1 - R_eq / R)*abs(pot_new(abs(0)));
-	else return abs(pot_new(R_eq));
+	double _Ys;
+	if (R_eq < 0) _Ys = (1 - R_eq / R)*abs(pot_new(abs(0)));
+	else _Ys = abs(pot_new(R_eq));
+	return _Ys;
 }
