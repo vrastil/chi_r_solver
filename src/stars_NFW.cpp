@@ -119,6 +119,7 @@ void spatial_init()
         {
 			// convert radius input to computing units
 			R = star_radius_to_cu(R);
+			R_eq = star_radius_to_cu(R_eq);
 
             // convert mass input to computing units, for star Ms = M200
             Ms = M200 = star_mass_to_cu(M200_sun);
@@ -136,6 +137,9 @@ void spatial_init()
         // NFW HALO: from concentration and mass computes density, R200
         case MOD_NFW:
         {
+			// convert radius input to computing units
+			R_eq = halo_radius_to_cu(R_eq);
+
             // convert mass to computing units
             M200 = halo_mass_to_cu(M200_sun);
 
@@ -312,29 +316,26 @@ double fce_max(double r, double *y){
 }
 
 double shoot_meth_star(double err, double eps){
-	double m = chi_mass(chi_B);
-	double s1;
+	double r2a = R - get_star_2ra_prefactor()*(1 - chi_B) / (rho_c*R*R)*R; // analytival value of r2
+	double s1 = std::min(R_eq, r2a);
 
-	if (R_eq > 10*R)
-	{
-		return R;
-	}
-	else if (R_eq < R)
-	{
-		s1 = R_eq;
-	}
-	else
+	if (s1 > R)
 	{
 		s1 = R;
 	}
+	else
+	{
+		double m = chi_mass(chi_B);
+		auto fce_min_star = bind(fce_min_r2, placeholders::_1, placeholders::_2, placeholders::_3, eps, m);
+		auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
+		t_function f_diff[] = { chi_0_der, chi_1_der };
 
-	auto fce_min_star = bind(fce_min_r2, placeholders::_1, placeholders::_2, placeholders::_3, eps, m);
-	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
-	t_function f_diff[] = { chi_0_der, chi_1_der };
+		s1 = shoot_meth(s1, 0.9, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
+	}
 
-	return shoot_meth(s1, 0.7, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
+	return s1;
 }
-
+	
 double shoot_meth_NFW(double err, double eps){
 	double s1 = R_eq;
 	auto fce_min_star = bind(fce_min_r2, placeholders::_1, placeholders::_2, placeholders::_3, eps, 0);
@@ -403,7 +404,7 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 			chi.push_back(0, chi_B*(1 + eps), 0);
 		}
 
-		BOOST_LOG_TRIVIAL(info) << "<r2> calculated as <" << r2 << ">. Filling analytical values from 0 to r2.";
+		BOOST_LOG_TRIVIAL(info) << "<r2> calculated as <" << r2 / R << ">. Filling analytical values from 0 to r2.";
 		double shr_d_shr2, chr_d_shr2; // sinh(r) / sinhr(r2), cosh(r) / sinhr(r2)
 		for (r = step; r < r2; r += step){
 			i++;
@@ -434,11 +435,11 @@ void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
 		i--;
 		BOOST_LOG_TRIVIAL(info) << "Chameleon field in the linear regime.";
 	}
-	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r << "> to 1/m_inf<" << 1/m_inf << ">.";
+	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r / R << "> to 1/m_inf<" << 1/(m_inf * R) << ">.";
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 	integrate_cout(r, chi_vec, integrate_star, err, chi_vec_eq, 2, chi, step, 1, i);
 
-	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r << "> to r_max<" << r_max << ">.";
+	BOOST_LOG_TRIVIAL(info) << "Starting integration from r<" << r / R << "> to r_max<" << r_max / R << ">.";
 	double a = chi_vec[1] * r*r*exp(m_inf*r) / (m_inf*r + 1);
 	chi_vec_eq[0] = bind(chi_0_der_lin, placeholders::_1, placeholders::_2, a);
 	while (r < r_max){
@@ -557,20 +558,21 @@ void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	// potential
 	std::string file_name = param.out_opt.out_dir + "potential.dat";
 	Ofstream File(file_name);
+	double mlt = get_pot_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing potential into file " << file_name;
 	File << "#Radius\tNewtonian potential\tChameleon potential\n";
 	File << "# r/r_s\t-Phi_N\t(phi_inf-phi)/(2*beta*M_PL)\n";
     File << std::scientific;
 	for (size_t j = 0; j < size; j++){
-		File << chi[0][j] / R << "\t" << -pot_NFW(chi[0][j]) << "\t" << 1 - chi[1][j] << endl;
+		File << chi[0][j] / R << "\t" << -pot_NFW(chi[0][j]) << "\t" << (1 - chi[1][j])*mlt << endl;
 	}
 	File.close();
 
 	// forces
 	file_name = param.out_opt.out_dir + "forces.dat";
 	File.open(file_name);
-	double mlt = get_force_mlt();
+	mlt = get_force_mlt();
 	
 	BOOST_LOG_TRIVIAL(debug) << "Writing forces into file " << file_name;
 	File << "#Radius\tChameleon force / Newtonian force\n";

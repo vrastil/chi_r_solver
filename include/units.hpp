@@ -4,6 +4,10 @@
    to computing units [m] */
 double star_radius_to_cu(double star_rad);
 
+/* convertes halo radius in units of kpc
+   to computing units [m] */
+double halo_radius_to_cu(double halo_rad);
+
 /* convertes halo mass in units of the sun * 1E12
    to computing units */
 double halo_mass_to_cu(double mass_halo);
@@ -30,6 +34,8 @@ double get_pot_mlt();
 
 double get_mass_scale();
 double get_radius_scale();
+
+double get_star_2ra_prefactor();
 
 // prefactor for gravitational potential
 // G*rho_m,0 + computing units

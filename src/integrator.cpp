@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include "integrator.hpp"
+#include "units.hpp"
 
 static void Runge_Kutta_adap_step(double &t_0, double *y_0, double &h_in, double h_min, double h_max, double atol,
                            double rtol, t_function *f, int dim, int &N_iter);
@@ -213,7 +214,7 @@ void get_x1_x2(double &x1, double &x2, std::function<double(double)> fce, double
 		f1 = f2;
 		f2 = fce(x2) - f_eq;
 		N_h++;
-	} while ((f1*f2 > 0) && (N_h < 100));
+	} while ((f1*f2 > 0) && (N_h < 1000));
 	if (N_h < 100) return;
 
 	x2 = xh;
@@ -226,7 +227,7 @@ void get_x1_x2(double &x1, double &x2, std::function<double(double)> fce, double
 		f1 = f2;
 		f2 = fce(x2) - f_eq;
 		N_h++;
-	} while ((f1*f2 > 0) && (N_h < 100));
+	} while ((f1*f2 > 0) && (N_h < 1000));
 }
 
 void get_x1_x2(double &x1, double &x2, std::function<double(double)> fce, double mlt){
@@ -240,13 +241,14 @@ double shoot_meth(double s1, double mlt, std::function<bool(double, double*)>t_m
 	// integrate till t_max is true
 	// boundary conditions at t_max are specified in fce_max, return 0 if achieved
 	double s2 = 0;
+	const double R = param.spatial.R;
 
-	BOOST_LOG_TRIVIAL(info) << "Start shooting method with s1<" << s1 << "> and mlt<" << mlt << ">";
+	BOOST_LOG_TRIVIAL(info) << "Start shooting method with s1<" << s1 / R << "> and mlt<" << mlt << ">";
 	auto fce_s = bind(integrate_fmax, std::placeholders::_1, t_max, fce_min, fce_max, err, f_diff, dim);
 	get_x1_x2(s1, s2, fce_s, mlt);
-	BOOST_LOG_TRIVIAL(info) << "Start root-finder method with s1<" << s1 << "> and s2<" << s2 << ">";
+	BOOST_LOG_TRIVIAL(info) << "Start root-finder method with s1<" << s1 / R << "> and s2<" << s2 / R << ">";
 	root_finder(s1, s2, fce_s, scale);
-	BOOST_LOG_TRIVIAL(info) << "Get root with s1<" << s1 << ">.";
+	BOOST_LOG_TRIVIAL(info) << "Get root with s1<" << s1 / R << ">.";
 	return s1;
 }
 

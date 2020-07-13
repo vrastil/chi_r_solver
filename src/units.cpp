@@ -86,6 +86,13 @@ double star_radius_to_cu(double star_rad)
     return star_rad * DISTANCE_UNITS_STAR;
 }
 
+/* convertes star radius in units of the sun
+   to computing units [R_sun] */
+double halo_radius_to_cu(double halo_rad)
+{
+    return halo_rad * DISTANCE_UNITS_HALO;
+}
+
 /* convertes halo mass in units of the sun * 1E12
    to computing units [eV] */
 double halo_mass_to_cu(double mass_halo)
@@ -178,4 +185,10 @@ double get_radius_scale()
         }
     }
 
+}
+
+double get_star_2ra_prefactor()
+{
+    return 2 * param.chi_opt.Ys * M_PL * M_PL;
+    // return 1 / (2 * param.chi_opt.Ys * param.chi_opt.beta * param.chi_opt.beta);
 }

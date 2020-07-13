@@ -107,8 +107,8 @@ void Parameters::print_info() const
 
         "\nIntegration options:\n"
         "\terr = " << param.integration.err <<
-        "\tstep = " << param.integration.step <<
-        "\tr_max = " << param.integration.r_max <<
+        "\tstep / R_s = " << param.integration.step / get_radius_scale() <<
+        "\tr_max / R_s = " << param.integration.r_max / get_radius_scale() <<
 
         "\nSpatial parameters:\n"
         "\tc = " << param.spatial.c <<
