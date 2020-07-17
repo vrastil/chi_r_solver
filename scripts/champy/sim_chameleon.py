@@ -31,6 +31,7 @@ class Simulation(object):
         if stdout is not None:
             print(f"Running command '{cmd}' from {os.getcwd()}")
         process  = subprocess.Popen(cmd, shell=True, stdout=stdout)
+        process.wait()
         if stdout is not None:
             print(process.stdout.read().decode('utf-8'))
 
@@ -73,9 +74,6 @@ def run_many_sims(kwargs_dflt, kwargs_sims, stdout=subprocess.PIPE):
         # run simulation
         sim.set_kwargs(**kwargs_sim)
         sim.run(stdout=stdout)
-
-        # wait to finish io
-        time.sleep(0.5)
         
         # save results
         results = {
@@ -91,7 +89,7 @@ def find_simulations(results_all, **kwargs):
     results = []
     for sim in results_all:
         for key, val in kwargs.items():
-            if sim['params'][key] != val:
+            if key in sim['params'] and sim['params'][key] != val:
                 break
         else:
             results.append(sim)
@@ -111,4 +109,4 @@ def plot_simulations(results_all, p_type='potential', label_by='Ys', data_col=1,
         data_all[label] = data
 
     # plot
-    plot_generic(data_all)
+    plot_generic(data_all, **kwargs)

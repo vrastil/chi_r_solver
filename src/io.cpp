@@ -41,6 +41,7 @@ status_t handle_cmd_line(int ac, const char* const av[]){
         ("help,h", "produce this help message")
         ("mod", po::value<mod_t>(&param.integration.mod)->default_value(0), "Mode; 0: star, 1: NFW")
         ("err", po::value<double>(&param.integration.err)->default_value(1E-8), "absolute / relative tolerances")
+        ("step", po::value<double>(&param.integration.step)->default_value(0), "step size")
         ;
 
 
@@ -142,7 +143,10 @@ void Parameters::init()
     chi_init();
 
     // INTEGRATION
-    integration.step = spatial.R / 10;
+    if (!integration.step){
+         integration.step = 0.1;
+    }
+    integration.step *= spatial.R;
 	integration.r_max = 10 / chi_opt.m_inf;
 
     // ALLOCATION
