@@ -331,8 +331,9 @@ double shoot_meth_star(double err, double eps){
 		t_function f_diff[] = { chi_0_der, chi_1_der };
 
 		s1 = shoot_meth(s1, 0.9, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
+		s1 = std::min(s1, R);
 	}
-
+	
 	return s1;
 }
 	

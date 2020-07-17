@@ -198,11 +198,11 @@ std::string std_out_dir()
 {
     /// directory name = YYMMDD_HHMMSS_m_p_M_b
     std::string out_dir = param.out_opt.out_dir;
-    switch (param.integration.mod)
-    {
-        case MOD_STAR: out_dir += "STAR/"; break;
-        case MOD_NFW: out_dir += "NFW/"; break;
-    }
+    // switch (param.integration.mod)
+    // {
+    //     case MOD_STAR: out_dir += "STAR/"; break;
+    //     case MOD_NFW: out_dir += "NFW/"; break;
+    // }
     // out_dir += currentDateTime();
 
     // const std::string out_dir = param.out_opt.out_dir + std::to_string(param.integration.mod) +"m_" +
@@ -210,7 +210,7 @@ std::string std_out_dir()
     //                   std::to_string(param.chi_opt.Ys) + "Y";
 
     // TODO: for now do not check existing directories, overwrite
-    return out_dir + "/";
+    return out_dir;
 
     /// check if directory exists
     if (!fs::exists(fs::path(out_dir.c_str()))) return out_dir + "/";
