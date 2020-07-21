@@ -235,23 +235,22 @@ void get_x1_x2(double &x1, double &x2, std::function<double(double)> fce, double
 }
 
 double shoot_meth(double s1, double mlt, std::function<bool(double, double*)>t_max, std::function<void(double, double &, double*)>fce_min,
-	t_function fce_max, double err, t_function *f_diff, int dim, double scale){
+	t_function fce_max, double err, t_function *f_diff, int dim, double scale, double divider){
 	// s1, mlt -- first guess and a multiplier to obtain other guesses
 	// initial conditions is specified in fce_min with parameter s
 	// integrate till t_max is true
 	// boundary conditions at t_max are specified in fce_max, return 0 if achieved
 	double s2 = 0;
-	const double R = param.spatial.R;
 
-	BOOST_LOG_TRIVIAL(info) << "Start shooting method with s1<" << s1 / R << "> and mlt<" << mlt << ">";
+	BOOST_LOG_TRIVIAL(info) << "Start shooting method with s1<" << s1 / divider << "> and mlt<" << mlt << ">";
 	auto fce_s = bind(integrate_fmax, std::placeholders::_1, t_max, fce_min, fce_max, err, f_diff, dim);
 	get_x1_x2(s1, s2, fce_s, mlt);
-	BOOST_LOG_TRIVIAL(info) << "Start root-finder method with s1<" << s1 / R << "> and s2<" << s2 / R << ">";
+	BOOST_LOG_TRIVIAL(info) << "Start root-finder method with s1<" << s1 / divider << "> and s2<" << s2 / divider << ">";
 	root_finder(s1, s2, fce_s, scale);
-	BOOST_LOG_TRIVIAL(info) << "Get root with s1<" << s1 / R << ">.";
+	BOOST_LOG_TRIVIAL(info) << "Get root with s1<" << s1 / divider << ">.";
 	return s1;
 }
 
-double shoot_meth(double s1, double mlt, std::function<bool(double, double*)>t_max, std::function<void(double, double &, double*)>fce_min, t_function fce_max, double err, t_function *f_diff, int dim){
-	return shoot_meth(s1, mlt, t_max, fce_min, fce_max, err, f_diff, dim, 0);
-}
+// double shoot_meth(double s1, double mlt, std::function<bool(double, double*)>t_max, std::function<void(double, double &, double*)>fce_min, t_function fce_max, double err, t_function *f_diff, int dim, double divider){
+// 	return shoot_meth(s1, mlt, t_max, fce_min, fce_max, err, f_diff, dim, 0, divider);
+// }

@@ -125,7 +125,7 @@ void Parameters::print_info() const
         "\tn = " << param.chi_opt.n <<
         "\tbeta = " << param.chi_opt.beta <<
         "\tYs = " << param.chi_opt.Ys <<
-        "\tR_eq = " << param.spatial.R_eq <<
+        "\tR_eq /R_s = " << param.spatial.R_eq / get_radius_scale() <<
         "\tchi_B = " << param.chi_opt.chi_B <<
         "\tm_inf = " << param.chi_opt.m_inf <<
 

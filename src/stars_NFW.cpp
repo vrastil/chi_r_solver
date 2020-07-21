@@ -147,7 +147,8 @@ void spatial_init()
             rho_0 = density_to_halo_cu(Omega_m);
             
             // rho_0 parameter of the NFW halo
-            rho_c = 200 * rho_0*c*(1 + c)*(1 + c);
+			// r_200: the radius at which the AVERAGE density is 200 times the critical density (in this case rho_0)
+            rho_c = 200 * rho_0*pow(c, 3) / (3*(log(1+c)-c/(1+c)));
 
             // from mass, rho_0 and concentration we get the scale radius
             R = pow(M200/(4*M_PI*rho_c)/(log(1+c)-c/(c+1)) , 1 / 3.0);
@@ -222,9 +223,9 @@ double chi_bulk_r(double r){
 
 
 double V_eff_der(double r, double chi){
-	if (chi <= 0) chi = chi_bulk_r(r);
+	// if (chi <= 0) chi = chi_bulk_r(r);
 
-	double v = chi_prefactor*(rho_r(r) - rho_0*pow(chi, n_chi - 1));
+	double v = chi_prefactor*(rho_r(r) - rho_0*pow(abs(chi), n_chi - 1));
 
 	if ((v != v) || (isinf(v))){
 		return 0;
@@ -330,7 +331,7 @@ double shoot_meth_star(double err, double eps){
 		auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 		t_function f_diff[] = { chi_0_der, chi_1_der };
 
-		s1 = shoot_meth(s1, 0.9, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
+		s1 = shoot_meth(s1, 0.9, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps, R);
 		s1 = std::min(s1, R);
 	}
 	
@@ -343,7 +344,7 @@ double shoot_meth_NFW(double err, double eps){
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 	t_function f_diff[] = { chi_0_der, chi_1_der };
 
-	return shoot_meth(s1, 0.5, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps);
+	return shoot_meth(s1, 0.5, integrate_star, fce_min_star, fce_max, err, f_diff, 2, eps, R);
 }
 
 void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err, chi_t& chi, double step){
@@ -365,19 +366,19 @@ void slv_Chameleon(double r_max, double chi_pot_0, double chi_der_0, double err,
 }
 
 double get_chi_0_star(double err, double eps){
-	double s1 = 1 + pot_star(0); // guess from the analytical solution
+	double s1 = 1 + pot_star(0)/Ys; // guess from the analytical solution
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / m_inf);
 	t_function f_diff[] = { chi_0_der, chi_1_der };
 
-	return shoot_meth(s1, 0.95, integrate_star, fce_min_chi_0, fce_max, err, f_diff, 2, 1*eps);
+	return shoot_meth(s1, 0.95, integrate_star, fce_min_chi_0, fce_max, err, f_diff, 2, 1*eps, 1);
 }
 
 double get_chi_0_NFW(double err, double eps){
-	double s1 = 1 + pot_NFW(0); // guess from the analytical solution
+	double s1 = 1 + pot_NFW(0)/Ys; // guess from the analytical solution
 	auto integrate_star = bind(is_integrate, placeholders::_1, placeholders::_2, 1 / (1 * m_inf));
 	t_function f_diff[] = { chi_0_der, chi_1_der };
 
-	return shoot_meth(s1, 0.95, integrate_star, fce_min_chi_0, fce_max, err, f_diff, 2, eps*1*m_inf*1e3);
+	return shoot_meth(s1, 0.95, integrate_star, fce_min_chi_0, fce_max, err, f_diff, 2, eps*1*m_inf*1e3, 1);
 }
 
 void slv_Chameleon_star(double r_max, double err, chi_t& chi, double &step){
@@ -469,7 +470,7 @@ void slv_Chameleon_star_cout(double r_max, double err, chi_t& chi, double &step)
 	File << "# r/r_s\t-Phi_N\t(phi_inf-phi)/(2*beta*M_PL)\n";
     File << std::scientific;
 	for (size_t j = 0; j < size; j++){
-		File << chi[0][j] / R << "\t" << -pot_new(chi[0][j]) << "\t" << (1 - chi[1][j])*mlt << endl;
+		File << chi[0][j] / R << "\t" << -pot_new(chi[0][j]) << "\t" << (1 - chi[1][j])*mlt << "\t" << chi[1][j] << endl;
 	}
 	File.close();
 
@@ -566,7 +567,7 @@ void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	File << "# r/r_s\t-Phi_N\t(phi_inf-phi)/(2*beta*M_PL)\n";
     File << std::scientific;
 	for (size_t j = 0; j < size; j++){
-		File << chi[0][j] / R << "\t" << -pot_NFW(chi[0][j]) << "\t" << (1 - chi[1][j])*mlt << endl;
+		File << chi[0][j] / R << "\t" << -pot_new(chi[0][j]) << "\t" << (1 - chi[1][j])*mlt << "\t" << chi[1][j] << endl;
 	}
 	File.close();
 
@@ -580,7 +581,7 @@ void slv_Chameleon_NFW_cout(double r_max, double err, chi_t& chi, double &step){
 	File << "# r/r_s\tF_phi/(2beta^2 F_N)\n";
     File << std::scientific;
 	for (size_t j = 1; j < size; j++){
-		File << chi[0][j] / R << "\t" << mlt*chi[2][j] / (2*beta*beta*force_NFW(chi[0][j])) << endl;
+		File << chi[0][j] / R << "\t" << mlt*chi[2][j] / (2*beta*beta*force_new(chi[0][j])) << endl;
 	}
 }
 
