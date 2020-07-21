@@ -132,7 +132,8 @@ def plot_simulations(results_all, p_type='potential', label_by='Ys', data_col=1,
         data = sim[p_type][0], sim[p_type][data_col]
         if isinstance(label_by, str):
             label = f"{label_by} = {sim['params'][label_by]}"
-
+        elif isinstance(label_by, list):
+            label = ", ".join([f"{label_by__} = {sim['params'][label_by__]}" for label_by__ in label_by])
         data_all[label] = data
 
     # plot

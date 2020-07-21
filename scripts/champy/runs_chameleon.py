@@ -12,7 +12,7 @@ kwargs_dflt = {
 }
 
 def run_plot_star_pot(parallel=True):
-    print(f"Running STAR-like simulation.")
+    print(f"Running STAR-like simulation (potential)")
 
     kwargs_sims = {
         "mod" : 0,
@@ -37,8 +37,36 @@ def run_plot_star_pot(parallel=True):
     plot_generic(data_all, ymin=1E-16, ymax=1E-13, xlabel=u'$r/R_s$', ylabel=u'$\chi$',
                  out_file='starlike.png')
 
+def run_plot_star_for(parallel=True):
+    print(f"Running STAR-like simulation (forces)")
+
+    kwargs_sims = {
+        "mod" : 0,
+        "Omega_m" : 1e6,
+        "M200_sun" : 3E-16,
+        "Ys" : 0,
+        "R": 1,
+        "R_eq" : [-1, 0.2, 0.5, 0.8, 1, 2]
+    }
+
+    results_all = run_many_sims(kwargs_dflt, kwargs_sims, stdout=None, parallel=parallel)
+    print(f"Plot and save.")
+
+    # extract data, set labels
+    data_all = {}
+    for sim in results_all:
+        data = sim['forces'][0], sim['forces'][1]
+        R_eq = sim['params']['R_eq']
+        label = f"$R_{{eq}} = {R_eq}$"
+        data_all[label] = data
+
+
+    plot_generic(data_all, yscale='linear', ymin=0, ymax=1.05, xlabel=u'$r/R_s$',
+                 ylabel=u'$F_\chi/(2\\beta^2F_N)$', out_file='starlike_forces.png')
+
 def main():
     run_plot_star_pot()
+    run_plot_star_for()
 
 if __name__ == "__main__":
     main()
