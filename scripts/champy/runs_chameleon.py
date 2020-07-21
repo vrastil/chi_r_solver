@@ -11,7 +11,7 @@ kwargs_dflt = {
     "step": 0.01,
 }
 
-def run_plot_star_pot():
+def run_plot_star_pot(parallel=True):
     print(f"Running STAR-like simulation.")
 
     kwargs_sims = {
@@ -22,7 +22,7 @@ def run_plot_star_pot():
         "R": 1E-1,
     }
 
-    results_all = run_many_sims(kwargs_dflt, kwargs_sims, stdout=None)
+    results_all = run_many_sims(kwargs_dflt, kwargs_sims, stdout=None, parallel=parallel)
     print(f"Plot and save.")
 
     # extract data, set labels

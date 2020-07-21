@@ -5,3 +5,4 @@ output/
 # python
 *-checkpoint.ipynb
 __pycache__
+*.pyc
