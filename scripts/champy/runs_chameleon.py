@@ -1,6 +1,6 @@
 import numpy as np
 
-from .sim_chameleon import run_many_sims
+from .sim_chameleon import run_many_sims, find_simulations
 from .plot_chameleon import plot_generic
 
 kwargs_dflt = {
@@ -34,7 +34,7 @@ def run_plot_star_pot(out_file='starlike.png', parallel=True):
         label = f"$\Phi_{{scr}} = 10^{{{Ys}}}$"
         data_all[label] = data
 
-    plot_generic(data_all, ymin=1E-16, ymax=1E-13, xlabel=u'$r/R_s$', ylabel=u'$\chi$',
+    plot_generic(data_all, ymin=1E-16, ymax=1E-13, xlabel=u'$r/R_s$', ylabel=u'$\tilde\chi$',
                  out_file=out_file)
 
 def run_plot_star_for(out_file='starlike_forces.png', parallel=True):
@@ -96,9 +96,12 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
     print(f"Running NFW-like simulation (forces)")
 
     kwargs_sims = {
+    "mod" : 1,
+    "n": [0.1, 0.5, 0.7],
+    "Omega_m" : 1,
     "c": 4,
     "M200_sun": 1E2,
-    "R_eq" : [-1, -100, 1],
+    "R_eq" : [-100, -1, 1],
     "Ys" : 0,
     }
 
@@ -106,8 +109,9 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
     print(f"Plot and save.")
 
     # extract data, set labels
+    sims_to_plot = find_simulations(results_all, n=0.5)
     data_all = {}
-    for sim in results_all:
+    for sim in sims_to_plot:
         data = sim['potential'][0], sim['potential'][3]
         R_eq = sim['params']['R_eq']
         label = f"$R_{{eq}} = {R_eq} R_s$"
@@ -115,6 +119,20 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
 
 
     plot_generic(data_all, yscale='linear', ymin=0, xmin=1E-1, xmax=1E2, xlabel=u'$r/R_s$',
+                 ylabel=u'$\Phi_{scr,eff}/\Phi_{scr}$', out_file=out_file)
+
+    # extract data, set labels
+    out_file = out_file.replace('.png', '_n.png')
+    sims_to_plot = find_simulations(results_all, R_eq=1)
+    data_all = {}
+    for sim in sims_to_plot:
+        data = sim['potential'][0], sim['potential'][3]
+        n = sim['params']['n']
+        label = f"$n = {n}$"
+        data_all[label] = data
+
+
+    plot_generic(data_all, yscale='log', xmin=1E-1, xmax=1E2, xlabel=u'$r/R_s$',
                  ylabel=u'$\Phi_{scr,eff}/\Phi_{scr}$', out_file=out_file)
 
 def main():
