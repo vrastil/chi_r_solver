@@ -2,6 +2,7 @@ import numpy as np
 
 from .sim_chameleon import run_many_sims, find_simulations
 from .plot_chameleon import plot_generic
+from .units import get_halo_parameters
 
 kwargs_dflt = {
     "err": 1E-12,
@@ -34,7 +35,7 @@ def run_plot_star_pot(out_file='starlike.png', parallel=True):
         label = f"$\Phi_{{scr}} = 10^{{{Ys}}}$"
         data_all[label] = data
 
-    plot_generic(data_all, ymin=1E-16, ymax=1E-13, xlabel=u'$r/R_s$', ylabel=u'$\tilde\chi$',
+    plot_generic(data_all, ymin=1E-16, ymax=1E-13, xlabel=u'$r/R_s$', ylabel=u'$\\tilde\chi$',
                  out_file=out_file)
 
 def run_plot_star_for(out_file='starlike_forces.png', parallel=True):
@@ -96,13 +97,13 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
     print(f"Running NFW-like simulation (forces)")
 
     kwargs_sims = {
-    "mod" : 1,
-    "n": [0.1, 0.5, 0.7],
-    "Omega_m" : 1,
-    "c": 4,
-    "M200_sun": 1E2,
-    "R_eq" : [-100, -1, 1],
-    "Ys" : 0,
+        "mod" : 1,
+        "n": [0.1, 0.5, 0.7],
+        "Omega_m" : 1,
+        "c": 4,
+        "M200_sun": 1E2,
+        "R_eq" : [-100, -1, 1],
+        "Ys" : 0,
     }
 
     results_all = run_many_sims(kwargs_dflt, kwargs_sims, stdout=None, parallel=parallel)
@@ -135,11 +136,73 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
     plot_generic(data_all, yscale='log', xmin=1E-1, xmax=1E2, xlabel=u'$r/R_s$',
                  ylabel=u'$\Phi_{scr,eff}/\Phi_{scr}$', out_file=out_file)
 
+def get_eff_mlt(forces, beta=1./np.sqrt(6)):
+    eff = forces[1] * (2*beta*beta)
+    return eff
+
+def run_plot_cluster(out_file='clusters.png'):
+    print(f"Running cluster simulation (effective mass)")
+    kwargs_dflt = {
+        "err": 1E-14,
+        "n": 0.5,
+        "print_par" : 1,
+        "out_dir" : "../output/",
+        "step": 1E-3,
+        "mod" : 1,
+        "Omega_m" : 1.0,
+    }
+
+    kwargs_sims = [
+        {
+            "label": "ClG 0054−27",
+            "c" : 1.2,
+            "M200_sun": 0.42E2,
+        },
+        {
+            "label": "Cl 0016+1609",
+            "c" : 2.1,
+            "M200_sun": 1.12E2,
+        },
+        {
+            "label": "MS 2137.3−2353",
+            "c" : 13,
+            "M200_sun": 2.9E2,
+        },
+        {
+            "label": "ClG 2244−02",
+            "c" : 4.3,
+            "M200_sun": 4.5E2,
+        },
+        {
+            "label": "MS 0451.6−0305",
+            "c" : 5.5,
+            "M200_sun": 18E2,
+        },
+    ]
+    for Ys in [1E-6, 1E-4, 1E-2, 1E0]:
+        kwargs_dflt["Ys"] = Ys
+        out_file_ = out_file.replace('.png', f"Ys_{int(np.log10(Ys))}.png")
+
+        data_all = {}
+        results_all = run_many_sims(kwargs_dflt, kwargs_sims, stdout=None, parallel=True)
+        for sim in results_all:
+            get_halo_parameters(sim['params'])
+            r = sim['forces'][0] * sim['params']['R_s'] / 1000
+            eff = get_eff_mlt(sim['forces'])
+            cut = np.argmax(eff)
+            data = r[:cut], eff[:cut]
+            label = sim['params']['label']# + f"$c = {c}, M = {M200_sun / 100}\\cdot10^{{14}}M_\\odot$"
+            data_all[label] = data
+
+        plot_generic(data_all, yscale='log', ymin=1E-6, xmin=0, xscale='linear', xlabel=u'$r$ [Mpc]',
+                ylabel=u'$M_{dyn}/M_{len}$', out_file=out_file_)
+
 def main():
-    run_plot_star_pot(out_file='starlike.png')
-    run_plot_star_for(out_file='starlike_forces.png')
-    run_plot_nfw_for(out_file='nfwlike_forces.png')
-    run_plot_nfw_pot_eff(out_file='nfwlike_pot_eff.png')
+    # run_plot_star_pot(out_file='starlike.png')
+    # run_plot_star_for(out_file='starlike_forces.png')
+    # run_plot_nfw_for(out_file='nfwlike_forces.png')
+    # run_plot_nfw_pot_eff(out_file='nfwlike_pot_eff.png')
+    run_plot_cluster(out_file='clusters.png')
 
 
 if __name__ == "__main__":

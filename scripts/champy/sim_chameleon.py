@@ -6,11 +6,15 @@ import subprocess
 import os
 import sys
 import time
+import copy
 
 import numpy as np
 
 from .plot_chameleon import plot_generic
 
+NOT_KWARGS = [
+    'label'
+]
 
 class Simulation(object):
     def __init__(self, run_cmd, **kwargs):
@@ -20,7 +24,8 @@ class Simulation(object):
 
     def set_kwargs(self, **kwargs):
         for arg, val in kwargs.items():
-            self.sim_kwargs[arg] = val
+            if arg not in NOT_KWARGS:
+                self.sim_kwargs[arg] = val
 
     def set_run_cmd(self, run_cmd):
         self.run_cmd = run_cmd
@@ -77,7 +82,12 @@ def run_many_sims(kwargs_dflt, kwargs_sims, stdout=subprocess.PIPE, parallel=Fal
     sim = Simulation("../build/main.a", **kwargs_dflt)
     
     # get all combinations of parameters
-    all_kwargs = get_all_kwargs(kwargs_sims)
+    if isinstance(kwargs_sims, dict):
+        all_kwargs = get_all_kwargs(kwargs_sims)
+    elif isinstance(kwargs_sims, list):
+        all_kwargs = copy.deepcopy(kwargs_sims)
+    else:
+        print(f"ERROR! Type of kwargs_sims cannot be {type(kwargs_sims)}")
     
     # for every combination run simulation and save results
     results_all = []

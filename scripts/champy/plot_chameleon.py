@@ -12,6 +12,7 @@ import matplotlib.cm as cm
 from matplotlib.colors import SymLogNorm
 from matplotlib.colors import ListedColormap
 from matplotlib.ticker import FormatStrFormatter
+from cycler import cycler
 
 # color-blind
 CB_colors = ['#377eb8', '#ff7f00', '#4daf4a',
@@ -24,10 +25,10 @@ CB_colors = ['#377eb8', '#ff7f00', '#4daf4a',
 matplotlib.rcParams['legend.numpoints'] = 1
 matplotlib.rcParams['lines.linewidth'] = 4.0
 matplotlib.rcParams['lines.markersize'] = 6.0
-# matplotlib.rcParams['axes.prop_cycle'] = cycler(color=CB_colors)
+matplotlib.rcParams['axes.prop_cycle'] = cycler(color=CB_colors)
 matplotlib.rcParams['axes.labelsize'] = 30
-matplotlib.rcParams['xtick.labelsize'] = 20
-matplotlib.rcParams['ytick.labelsize'] = 20
+matplotlib.rcParams['xtick.labelsize'] = 22
+matplotlib.rcParams['ytick.labelsize'] = 22
 matplotlib.rcParams['legend.fontsize'] = 25
 matplotlib.rcParams['font.size'] = 25
 
@@ -56,8 +57,13 @@ def plot_generic(data_all, **kwargs):
 
     # plot all data
     for label, data in data_all.items():
-        x, y = data
-        ax.plot(x, y, label=label)
+        x = data[0]
+        p = None
+        for y in data[1:]:
+            if p is None:
+                p = ax.plot(x, y, label=label)
+            else:
+                ax.plot(x, y, c=p[-1].get_color(), ls='--')
 
     # set scales
     ax.set_yscale(yscale)
@@ -77,10 +83,10 @@ def plot_generic(data_all, **kwargs):
     plt.legend()
 
     # save, show, close
-    if show:
-        plt.show()
-
     if out_file:
         plt.savefig(out_dir + out_file)
+
+    if show:
+        plt.show()
 
     plt.close('all')
