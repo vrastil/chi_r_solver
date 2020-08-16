@@ -32,7 +32,7 @@ def run_plot_star_pot(out_file='starlike.png', parallel=True):
     for sim in results_all:
         data = sim['potential'][0], sim['potential'][2]
         Ys = int(np.log10(sim['params']['Ys']))
-        label = f"$\Phi_{{scr}} = 10^{{{Ys}}}$"
+        label = f"$\Phi_{{\\rm scr}} = 10^{{{Ys}}}$"
         data_all[label] = data
 
     plot_generic(data_all, ymin=1E-16, ymax=1E-13, xlabel=u'$r/R_s$', ylabel=u'$\\tilde\chi$',
@@ -58,7 +58,7 @@ def run_plot_star_for(out_file='starlike_forces.png', parallel=True):
     for sim in results_all:
         data = sim['forces'][0], sim['forces'][1]
         R_eq = sim['params']['R_eq']
-        label = f"$R_{{eq}} = {R_eq} R_s$"
+        label = f"$R_{{\\rm eq}} = {R_eq} R_s$"
         data_all[label] = data
 
 
@@ -86,7 +86,7 @@ def run_plot_nfw_for(out_file='nfwlike_forces.png', parallel=True):
     for sim in results_all:
         data = sim['forces'][0], sim['forces'][1]
         R_eq = sim['params']['R_eq']
-        label = f"$R_{{eq}} = {R_eq} R_s$"
+        label = f"$R_{{\\rm eq}} = {R_eq} R_s$"
         data_all[label] = data
 
 
@@ -94,7 +94,7 @@ def run_plot_nfw_for(out_file='nfwlike_forces.png', parallel=True):
                  ylabel=u'$F_\chi/(2\\beta^2F_N)$', out_file=out_file)
 
 def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
-    print(f"Running NFW-like simulation (forces)")
+    print(f"Running NFW-like simulation (potential)")
 
     kwargs_sims = {
         "mod" : 1,
@@ -115,12 +115,12 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
     for sim in sims_to_plot:
         data = sim['potential'][0], sim['potential'][3]
         R_eq = sim['params']['R_eq']
-        label = f"$R_{{eq}} = {R_eq} R_s$"
+        label = f"$R_{{\\rm eq}} = {R_eq} R_s$"
         data_all[label] = data
 
 
     plot_generic(data_all, yscale='linear', ymin=0, xmin=1E-1, xmax=1E2, xlabel=u'$r/R_s$',
-                 ylabel=u'$\Phi_{scr,eff}/\Phi_{scr}$', out_file=out_file)
+                 ylabel=u'$\Phi_{\\rm scr,eff}/\Phi_{\\rm scr}$', out_file=out_file)
 
     # extract data, set labels
     out_file = out_file.replace('.png', '_n.png')
@@ -134,7 +134,7 @@ def run_plot_nfw_pot_eff( out_file='nfwlike_pot_eff.png', parallel=True):
 
 
     plot_generic(data_all, yscale='log', xmin=1E-1, xmax=1E2, xlabel=u'$r/R_s$',
-                 ylabel=u'$\Phi_{scr,eff}/\Phi_{scr}$', out_file=out_file)
+                 ylabel=u'$\Phi_{\\rm scr,eff}/\Phi_{\\rm scr}$', out_file=out_file)
 
 def get_eff_mlt(forces, beta=1./np.sqrt(6)):
     eff = forces[1] * (2*beta*beta)
@@ -195,13 +195,13 @@ def run_plot_cluster(out_file='clusters.png'):
             data_all[label] = data
 
         plot_generic(data_all, yscale='log', ymin=1E-6, xmin=0, xscale='linear', xlabel=u'$r$ [Mpc]',
-                ylabel=u'$M_{dyn}/M_{len}$', out_file=out_file_)
+                ylabel=u'$M_{\\rm dyn}/M_{\\rm len}$', out_file=out_file_)
 
 def main():
-    # run_plot_star_pot(out_file='starlike.png')
-    # run_plot_star_for(out_file='starlike_forces.png')
-    # run_plot_nfw_for(out_file='nfwlike_forces.png')
-    # run_plot_nfw_pot_eff(out_file='nfwlike_pot_eff.png')
+    run_plot_star_pot(out_file='starlike.png')
+    run_plot_star_for(out_file='starlike_forces.png')
+    run_plot_nfw_for(out_file='nfwlike_forces.png')
+    run_plot_nfw_pot_eff(out_file='nfwlike_pot_eff.png')
     run_plot_cluster(out_file='clusters.png')
 
 

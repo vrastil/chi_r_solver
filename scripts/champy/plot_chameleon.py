@@ -4,7 +4,7 @@
 
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('PS', warn=False)
 from matplotlib import animation
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -31,6 +31,7 @@ matplotlib.rcParams['xtick.labelsize'] = 22
 matplotlib.rcParams['ytick.labelsize'] = 22
 matplotlib.rcParams['legend.fontsize'] = 25
 matplotlib.rcParams['font.size'] = 25
+matplotlib.rcParams['text.usetex'] = True
 
 dflt_suptitle_size = 25
 dflt_fig_size = (14, 9)
